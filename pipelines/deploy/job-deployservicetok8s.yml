@@ -1,0 +1,68 @@
+parameters:
+  - name: environment
+    type: string
+  - name: namespace
+    type: string
+  - name: valuesFile
+    type: string # now expects full path
+  - name: artifactName
+    type: string
+  - name: chartPackage
+    type: string
+  - name: kubernetesDeploymentServiceConnection
+    type: string
+  - name: updateBuildNumber
+    type: boolean
+    default: false
+  - name: tokenizerSecrets
+    type: object
+    default: []
+  - name: displayName
+    type: string
+    default: 'Deploy Service to Kubernetes'
+  - name: pool
+    type: object
+    default:
+      vmImage: 'ubuntu-latest'
+  - name: container
+    type: string
+    default: ''
+  - name: jobName
+    type: string
+    default: 'deploy'
+  - name: dependsOn
+    type: object
+    default: []
+  - name: variables
+    type: object
+    default: {}
+
+jobs:
+  - deployment: ${{ parameters.jobName }}
+    displayName: "${{ parameters.displayName }}"
+    environment: ${{ parameters.environment }}
+    dependsOn: ${{ parameters.dependsOn }}
+    pool: ${{ parameters.pool }}
+    ${{ if ne(parameters.container, '') }}:
+      container: ${{ parameters.container }}
+    variables: ${{ parameters.variables}}
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+            - checkout: none
+            - ${{ if eq(parameters.updateBuildNumber, true) }}:
+                - script: |
+                    echo "##vso[build.updatebuildnumber]$(releaseBuildNumber)"
+                  displayName: 'Update Release Build Number'
+            - download: CIBuild
+            - template: step-deployhelmchart.yml
+              parameters:
+                kubernetesDeploymentServiceConnection: '${{ parameters.kubernetesDeploymentServiceConnection }}'
+                clusterNamespace: '${{ parameters.namespace }}'
+                chartPath: '${{ parameters.chartPackage }}'
+                releaseName: '${{ parameters.artifactName }}'
+                releaseValuesFile: '${{ parameters.valuesFile }}'
+                tokenizerSecrets: ${{ parameters.tokenizerSecrets }}
+                installHelm: false
+                installKubectl: false

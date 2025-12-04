@@ -1,0 +1,80 @@
+parameters:
+  - name: kubernetesDeploymentServiceConnection
+    type: string
+  - name: clusterNamespace
+    type: string
+  - name: chartPath
+    type: string
+  - name: releaseName
+    type: string
+  - name: releaseValuesFile
+    type: string
+  - name: tokenizerSecrets
+    type: object
+    default: []
+  - name: installHelm
+    type: boolean
+    default: true
+  - name: installKubectl
+    type: boolean
+    default: true
+  - name: helmVersion
+    type: string
+    default: latest
+  - name: kubectlVersion
+    type: string
+    default: latest
+  - name: createNamespace
+    type: boolean
+    default: false
+  - name: condition
+    type: string
+    default: 'succeeded()'
+
+steps:
+  - ${{ if eq(parameters.installKubectl, true) }}:
+    - task: KubectlInstaller@0
+      displayName: 'Install Kubectl ${{ parameters.kubectlVersion }}'
+      condition: ${{ parameters.condition }}
+      inputs:
+        kubectlVersion: '${{ parameters.kubectlVersion }}'
+
+  - ${{ if eq(parameters.installHelm, true) }}:
+    - task: HelmInstaller@1
+      displayName: 'Install Helm ${{ parameters.helmVersion }}'
+      condition: ${{ parameters.condition }}
+      inputs:
+        helmVersionToInstall: '${{ parameters.helmVersion }}'
+  
+  - ${{ if eq(parameters.createNamespace, true) }}:
+    - task: Kubernetes@1
+      displayName: 'Create Namespace'
+      condition: ${{ parameters.condition }}
+      inputs:
+        connectionType: 'Kubernetes Service Connection'
+        kubernetesServiceEndpoint: ${{ parameters.kubernetesDeploymentServiceConnection }}
+        command: create
+        arguments: 'namespace ${{ parameters.clusterNamespace }}'
+
+  - template: ../general/step-tokenizer.yml
+    parameters:
+      filePattern: '${{ parameters.releaseValuesFile }}'
+      secrets: ${{ parameters.tokenizerSecrets }}
+      condition: ${{ parameters.condition }}
+  
+  # Helm deploy - with proper condition based on params
+  - task: HelmDeploy@0
+    displayName: 'Helm upgrade ${{ parameters.releaseName }}'
+    # If deployOnlyIfNotExist is true, only deploy when release doesn't exist
+    # Otherwise, use the generic condition parameter
+    condition: ${{ parameters.condition }}
+    inputs:
+      connectionType: 'Kubernetes Service Connection'
+      kubernetesServiceConnection: ${{ parameters.kubernetesDeploymentServiceConnection }}
+      namespace: ${{ parameters.clusterNamespace }}
+      command: 'upgrade'
+      chartType: 'FilePath'
+      chartPath: ${{ parameters.chartPath }}
+      releaseName: ${{ parameters.releaseName }}
+      valueFile: ${{ parameters.releaseValuesFile }}
+      install: true

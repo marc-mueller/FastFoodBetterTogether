@@ -1,0 +1,700 @@
+trigger: none          # run on demand (manual or scheduled)
+
+parameters:
+# -------------------------------------------------------------------
+# simple scalars
+# -------------------------------------------------------------------
+- name: branchName
+  type: string
+  default: 'main'
+
+- name: minimumApprovers
+  type: number
+  default: 1                      # demos
+
+- name: allowApproveOwnChange
+  type: boolean
+  default: true                   # demos
+
+- name: resetVotesOnPush
+  type: boolean
+  default: true
+
+- name: checkLinkedWorkItems
+  type: boolean
+  default: true
+
+- name: linkedWorkItemsBlocking
+  type: boolean
+  default: false                   # optional (still enabled)
+
+- name: commentResolutionRequired
+  type: boolean
+  default: false                   # optional (still enabled)
+
+- name: allowDownvotes
+  type: boolean
+  default: false
+
+# -------------------------------------------------------------------
+# merge-strategy settings (object)
+# -------------------------------------------------------------------
+- name: mergeStrategy
+  type: object
+  default:
+    allowSquash: true
+    allowRebase: false
+    allowMerge: false
+    allowRebaseMerge: false
+
+# -------------------------------------------------------------------
+# services (array of objects)
+# -------------------------------------------------------------------
+- name: services
+  type: object
+  default:
+    - name: orderservice
+      ciName: 'ci-orderservice'
+      pathFilters:
+        - '/src/services/order/*'
+        - '/pipelines/ci-orderservice.yml'
+        - '/pipelines/cd-orderservice.yml'
+        - '/pipelines/config/*'
+        - '/pipelines/build/*'
+        - '/pipelines/deploy/*'
+        - '/pipelines/general/*'
+        - '/pipelines/pullrequest/*'
+        - '/pipelines/test/*'
+      blocking: true
+      queueOnlyOnSrcUpdate: true
+      validForMins: 720
+      statusChecks:
+        - genre: 'pr-env'
+          name: 'pr-deployment-orderservice'
+          displayName: 'OrderService PR Deployment'
+          blocking: true
+
+    - name: kitchenservice
+      ciName: 'ci-kitchenservice'
+      pathFilters:
+        - '/src/services/kitchen/*'
+        - '/pipelines/ci-kitchenservice.yml'
+        - '/pipelines/cd-kitchenservice.yml'
+        - '/pipelines/config/*'
+        - '/pipelines/build/*'
+        - '/pipelines/deploy/*'
+        - '/pipelines/general/*'
+        - '/pipelines/pullrequest/*'
+        - '/pipelines/test/*'
+      blocking: true
+      queueOnlyOnSrcUpdate: true
+      validForMins: 720
+      statusChecks:
+        - genre: 'pr-env'
+          name: 'pr-deployment-kitchenservice'
+          displayName: 'KitchenService PR Deployment'
+          blocking: true
+
+    - name: financeservice
+      ciName: 'ci-financeservice'
+      pathFilters:
+        - '/src/services/finance/*'
+        - '/pipelines/ci-financeservice.yml'
+        - '/pipelines/cd-financeservice.yml'
+        - '/pipelines/config/*'
+        - '/pipelines/build/*'
+        - '/pipelines/deploy/*'
+        - '/pipelines/general/*'
+        - '/pipelines/pullrequest/*'
+        - '/pipelines/test/*'
+      blocking: true
+      queueOnlyOnSrcUpdate: true
+      validForMins: 720
+      statusChecks:
+        - genre: 'pr-env'
+          name: 'pr-deployment-financeservice'
+          displayName: 'FinanceService PR Deployment'
+          blocking: true
+
+    - name: frontendcustomerorderstatus
+      ciName: 'ci-frontendcustomerorderstatus'
+      pathFilters:
+        - '/src/services/frontendcustomerorderstatus/*'
+        - '/pipelines/ci-frontendcustomerorderstatus.yml'
+        - '/pipelines/cd-frontendcustomerorderstatus.yml'
+        - '/pipelines/config/*'
+        - '/pipelines/build/*'
+        - '/pipelines/deploy/*'
+        - '/pipelines/general/*'
+        - '/pipelines/pullrequest/*'
+        - '/pipelines/test/*'
+      blocking: true
+      queueOnlyOnSrcUpdate: true
+      validForMins: 720
+      statusChecks:
+        - genre: 'pr-env'
+          name: 'pr-deployment-frontendcustomerorderstatus'
+          displayName: 'FrontendCustomerOrderStatus PR Deployment'
+          blocking: true
+
+    - name: frontendkitchenmonitor
+      ciName: 'ci-frontendkitchenmonitor'
+      pathFilters:
+        - '/src/services/frontendkitchenmonitor/*'
+        - '/pipelines/ci-frontendkitchenmonitor.yml'
+        - '/pipelines/cd-frontendkitchenmonitor.yml'
+        - '/pipelines/config/*'
+        - '/pipelines/build/*'
+        - '/pipelines/deploy/*'
+        - '/pipelines/general/*'
+        - '/pipelines/pullrequest/*'
+        - '/pipelines/test/*'
+      blocking: true
+      queueOnlyOnSrcUpdate: true
+      validForMins: 720
+      statusChecks:
+        - genre: 'pr-env'
+          name: 'pr-deployment-frontendkitchenmonitor'
+          displayName: 'FrontendKitchenMonitor PR Deployment'
+          blocking: true
+
+    - name: frontendselfservicepos
+      ciName: 'ci-frontendselfservicepos'
+      pathFilters:
+        - '/src/services/frontendselfservicepos/*'
+        - '/pipelines/ci-frontendselfservicepos.yml'
+        - '/pipelines/cd-frontendselfservicepos.yml'
+        - '/pipelines/config/*'
+        - '/pipelines/build/*'
+        - '/pipelines/deploy/*'
+        - '/pipelines/general/*'
+        - '/pipelines/pullrequest/*'
+        - '/pipelines/test/*'
+      blocking: true
+      queueOnlyOnSrcUpdate: true
+      validForMins: 720
+      statusChecks:
+        - genre: 'pr-env'
+          name: 'pr-deployment-frontendselfservicepos'
+          displayName: 'FrontendSelfServicePos PR Deployment'
+          blocking: true
+
+# -------------------------------------------------------------------
+# generic build validations (array of objects)
+# -------------------------------------------------------------------
+- name: genericBuildValidations
+  type: object
+  default:
+    - ciName: 'pr-initialize'
+      displayName: 'PR Environment Initialization'
+      blocking: true
+      queueOnlyOnSrcUpdate: true
+      validForMins: 1440
+
+    - ciName: 'pr-securityscan'
+      displayName: 'PR Security Scan'
+      blocking: true
+      queueOnlyOnSrcUpdate: true
+      validForMins: 1440
+
+# -------------------------------------------------------------------
+# generic status checks (array of objects)
+# -------------------------------------------------------------------
+- name: genericStatusChecks
+  type: object
+  default:
+    - genre: 'wi'
+      name:  'fastfood-wi-content-check'
+      displayName: 'Work Item Content Check'
+      blocking: true
+
+# -------------------------------------------------------------------
+# automatically included reviewers (array of objects)
+# -------------------------------------------------------------------
+- name: autoIncludedReviewers
+  type: object
+  default:
+    - displayName: 'Backend Development Team'     # Used for script logging only, not in the actual policy
+      groupName: '[k8sDemo]\Backend Developers'   # Name of the security group in Azure DevOps (will be resolved to ID)
+      pathFilters:
+        - '/src/services/order/*'
+        - '/src/services/kitchen/*'
+        - '/src/services/finance/*'
+      isRequiredReview: true
+      canReviewOwnChanges: false
+      messageText: 'Please review the backend changes'
+      
+    - displayName: 'Frontend Development Team'    # Used for script logging only, not in the actual policy
+      groupName: '[k8sDemo]\Frontend Developers'  # Name of the security group in Azure DevOps (will be resolved to ID)
+      pathFilters:
+        - '/src/services/frontendcustomerorderstatus/*'
+        - '/src/services/frontendkitchenmonitor/*'
+        - '/src/services/frontendselfservicepos/*'
+      isRequiredReview: false
+      canReviewOwnChanges: false
+      messageText: 'Please review the frontend changes'
+
+pool:
+  vmImage: ubuntu-latest
+
+steps:
+- checkout: none
+# ------------------------------------------------------------------
+# 1) CLI login (uses the pipeline’s own OAuth token)
+# ------------------------------------------------------------------
+- bash: |
+    az devops configure --defaults \
+      organization='$(System.TeamFoundationCollectionUri)' \
+      project='$(System.TeamProject)'
+  env:
+    AZURE_DEVOPS_EXT_PAT: $(System.AccessToken)
+  displayName: 'Azure DevOps CLI login'
+
+# ------------------------------------------------------------------
+# 2) Global branch policies on main
+# ------------------------------------------------------------------
+- bash: |
+    set -euo pipefail
+    repoId=$(Build.Repository.ID)
+    branch='${{ parameters.branchName }}'
+
+    # Minimum reviewers ------------------------------------------------
+    approver_id=$(az repos policy list --branch $branch --repository-id $repoId \
+      --query "[?type.displayName=='Minimum number of reviewers'].id" -o tsv)
+    az repos policy approver-count create \
+      --branch $branch --repository-id $repoId \
+      --minimum-approver-count ${{ parameters.minimumApprovers }} \
+      --creator-vote-counts ${{ parameters.allowApproveOwnChange }} \
+      --reset-on-source-push  ${{ parameters.resetVotesOnPush }} \
+      --allow-downvotes ${{ parameters.allowDownvotes }} \
+      --enabled true --blocking true \
+    || if [ -n "$approver_id" ]; then 
+         az repos policy approver-count update \
+           --id $approver_id \
+           --minimum-approver-count ${{ parameters.minimumApprovers }} \
+           --creator-vote-counts ${{ parameters.allowApproveOwnChange }} \
+           --reset-on-source-push  ${{ parameters.resetVotesOnPush }} \
+           --allow-downvotes ${{ parameters.allowDownvotes }} ;
+       else
+         echo "No Minimum number of reviewers policy found to update.";
+       fi
+
+    # Work-item linking -------------------------------------------------
+    workitem_id=$(az repos policy list --branch $branch --repository-id $repoId \
+      --query "[?type.displayName=='Work item linking'].id" -o tsv)
+    az repos policy work-item-linking create \
+      --branch $branch --repository-id $repoId \
+      --enabled  ${{ parameters.checkLinkedWorkItems }} \
+      --blocking ${{ parameters.linkedWorkItemsBlocking }} \
+    || if [ -n "$workitem_id" ]; then 
+         az repos policy work-item-linking update \
+           --id $workitem_id \
+           --enabled  ${{ parameters.checkLinkedWorkItems }} \
+           --blocking ${{ parameters.linkedWorkItemsBlocking }} ;
+       else
+         echo "No Work item linking policy found to update.";
+       fi
+
+    # Comment resolution -----------------------------------------------
+    comment_id=$(az repos policy list --branch $branch --repository-id $repoId \
+      --query "[?type.displayName=='Comment requirements'].id" -o tsv)
+    az repos policy comment-required create \
+      --branch $branch --repository-id $repoId \
+      --enabled  ${{ parameters.commentResolutionRequired }} \
+      --blocking ${{ parameters.commentResolutionRequired }} \
+    || if [ -n "$comment_id" ]; then 
+         az repos policy comment-required update \
+           --id $comment_id \
+           --enabled  ${{ parameters.commentResolutionRequired }} \
+           --blocking ${{ parameters.commentResolutionRequired }} ;
+       else
+         echo "No Comment requirements policy found to update.";
+       fi
+
+    # Merge strategy ----------------------------------------------------
+    merge_id=$(az repos policy list --branch $branch --repository-id $repoId \
+      --query "[?type.displayName=='Merge strategy'].id" -o tsv)
+    az repos policy merge-strategy create \
+      --branch $branch --repository-id $repoId \
+      --allow-squash                  ${{ parameters.mergeStrategy.allowSquash }} \
+      --allow-rebase                  ${{ parameters.mergeStrategy.allowRebase }} \
+      --allow-no-fast-forward         ${{ parameters.mergeStrategy.allowMerge }} \
+      --allow-rebase-merge            ${{ parameters.mergeStrategy.allowRebaseMerge }} \
+      --enabled true --blocking true \
+    || if [ -n "$merge_id" ]; then 
+         az repos policy merge-strategy update \
+           --id $merge_id \
+           --allow-squash                  ${{ parameters.mergeStrategy.allowSquash }} \
+           --allow-rebase                  ${{ parameters.mergeStrategy.allowRebase }} \
+           --allow-no-fast-forward         ${{ parameters.mergeStrategy.allowMerge }} \
+           --allow-rebase-merge            ${{ parameters.mergeStrategy.allowRebaseMerge }} ;
+       else
+         echo "No Merge strategy policy found to update.";
+       fi
+  env:
+    AZURE_DEVOPS_EXT_PAT: $(System.AccessToken)
+  displayName: 'Set global branch policies'
+
+# ------------------------------------------------------------------
+# 3) Generic build validations & status checks
+# ------------------------------------------------------------------
+- bash: |
+    set -euo pipefail
+    repoId=$(Build.Repository.ID)
+    branch='${{ parameters.branchName }}'
+
+    # Generic build validations (no path filter) -----------------------
+    echo '${{ convertToJson(parameters.genericBuildValidations) }}' | jq -c '.[]' | while read gen; do
+      ciName=$(echo $gen | jq -r '.ciName')
+      disp=$(echo  $gen | jq -r '.displayName')
+      block=$(echo $gen | jq -r '.blocking')
+      qsrc=$(echo  $gen | jq -r '.queueOnlyOnSrcUpdate')
+      valid=$(echo $gen | jq -r '.validForMins')
+
+      def=$(az pipelines build definition list \
+              --name "$ciName" \
+              --organization $(System.TeamFoundationCollectionUri) \
+              --project $(System.TeamProject) \
+              --query "[0].id" -o tsv)
+      if [ -z "$def" ]; then
+        echo "❌ Pipeline '$ciName' not found"; exit 1
+      fi
+
+      echo "[GENERIC] Creating build policy: disp='$disp', def='$def', branch='$branch', repoId='$repoId'"
+      az repos policy build create \
+        --branch $branch \
+        --repository-id $repoId \
+        --display-name "$disp" \
+        --build-definition-id $def \
+        --queue-on-source-update-only $qsrc \
+        --valid-duration $valid \
+        --manual-queue-only false \
+        --blocking $block --enabled true \
+      || {
+        policy_id=$(az repos policy list --branch $branch --repository-id $repoId \
+          --query "[?settings.displayName=='$disp'].id" -o tsv)
+        if [ -n "$policy_id" ]; then
+          echo "[GENERIC] Updating build policy: id='$policy_id', disp='$disp', def='$def', branch='$branch', repoId='$repoId'"
+          az repos policy build update \
+            --id $policy_id \
+            --build-definition-id $def \
+            --branch $branch \
+            --repository-id $repoId \
+            --queue-on-source-update-only $qsrc \
+            --valid-duration $valid \
+            --manual-queue-only false \
+            --blocking $block --enabled true
+        else
+          echo "[GENERIC] No existing build policy found to update for displayName='$disp'"
+        fi
+      }
+    done
+
+    # Generic status checks -------------------------------------------
+    status_type_id=$(az devops invoke --area policy --resource types \
+      --organization $(System.TeamFoundationCollectionUri) \
+      --route-parameters project=$(System.TeamProject) \
+      --http-method GET --api-version 7.1 -o json |
+      jq -r '.value[] | select(.displayName=="Status") | .id')
+
+    echo '${{ convertToJson(parameters.genericStatusChecks) }}' | jq -c '.[]' | while read sts; do
+      genre=$(echo $sts | jq -r '.genre')
+      sname=$(echo $sts | jq -r '.name')
+      disp=$(echo  $sts | jq -r '.displayName')
+      sblock=$(echo $sts| jq -r '.blocking')
+
+      cfg=$(mktemp)
+      cat > $cfg <<EOF
+    {
+      "isEnabled": true,
+      "isBlocking": $sblock,
+      "type": { "id": "$status_type_id" },
+      "settings": {
+        "defaultDisplayName": "$disp",
+        "statusGenre": "$genre",
+        "statusName": "$sname",
+        "invalidateOnSourceUpdate": true,
+        "scope": [{
+          "repositoryId": "$repoId",
+          "refName": "refs/heads/$branch",
+          "matchKind": "Exact"
+        }]
+      }
+    }
+    EOF
+      az repos policy create --config $cfg \
+      || az repos policy update --config $cfg \
+        --id $(az repos policy list --branch $branch --repository-id $repoId \
+          --query "[?settings.statusGenre=='$genre' && settings.statusName=='$sname'].id" -o tsv)
+    done
+  env:
+    AZURE_DEVOPS_EXT_PAT: $(System.AccessToken)
+  displayName: 'Generic policies'
+
+
+# ------------------------------------------------------------------
+# 4) Per-service build validations & status checks
+# ------------------------------------------------------------------
+- bash: |
+    set -euo pipefail
+    repoId=$(Build.Repository.ID)
+    branch='${{ parameters.branchName }}'
+
+    echo '${{ convertToJson(parameters.services) }}' | jq -c '.[]' | while read svc; do
+      name=$(echo $svc     | jq -r '.name')
+      ciName=$(echo $svc   | jq -r '.ciName')
+      path=$(echo $svc     | jq -r '.pathFilters | join(";")')
+      block=$(echo $svc    | jq -r '.blocking')
+      qsrc=$(echo $svc     | jq -r '.queueOnlyOnSrcUpdate')
+      valid=$(echo $svc    | jq -r '.validForMins')
+
+      # resolve buildDefinitionId from friendly name -------------------
+      def=$(az pipelines build definition list \
+              --name "$ciName" \
+              --organization $(System.TeamFoundationCollectionUri) \
+              --project $(System.TeamProject) \
+              --query "[0].id" -o tsv)
+      if [ -z "$def" ]; then
+        echo "❌ Pipeline '$ciName' not found"; exit 1
+      fi
+
+      # build-validation policy ---------------------------------------
+      # Find existing build policy with same display name and path filter (array-aware)
+      build_policy_id=$(az repos policy list --branch $branch --repository-id $repoId \
+        --query "[?type.displayName=='Build'].id" -o tsv | while read id; do
+          match=$(az repos policy show --id $id \
+            --query '[settings.displayName, settings.filenamePatterns]' -o json)
+          pol_name=$(echo $match | jq -r '.[0]')
+          pol_paths=$(echo $match | jq -c '.[1] | sort')
+          svc_paths=$(echo $svc | jq -c '.pathFilters | sort')
+          if [ "$pol_name" = "CI $name" ] && [ "$pol_paths" = "$svc_paths" ]; then
+            echo $id
+            break
+          fi
+        done)
+      if [ -n "$build_policy_id" ]; then
+        az repos policy build update \
+          --id $build_policy_id \
+          --build-definition-id $def \
+          --path-filter "$path" \
+          --queue-on-source-update-only $qsrc \
+          --valid-duration $valid \
+          --manual-queue-only false \
+          --blocking $block --enabled true
+      else
+        az repos policy build create \
+          --branch $branch --repository-id $repoId \
+          --display-name "CI $name" --build-definition-id $def \
+          --path-filter "$path" \
+          --queue-on-source-update-only $qsrc \
+          --valid-duration $valid \
+          --manual-queue-only false \
+          --blocking $block --enabled true
+      fi
+
+      # --- status-check policies ------------------------------------
+      status_type_id=$(az devops invoke --area policy --resource types \
+        --organization $(System.TeamFoundationCollectionUri) \
+        --route-parameters project=$(System.TeamProject) \
+        --http-method GET --api-version 7.1 -o json |
+        jq -r '.value[] | select(.displayName=="Status") | .id')
+
+      echo $svc | jq -c '.statusChecks[]?' | while read sts; do
+        genre=$(echo $sts   | jq -r '.genre')
+        sname=$(echo $sts   | jq -r '.name')
+        disp=$(echo  $sts   | jq -r '.displayName')
+        sblock=$(echo $sts  | jq -r '.blocking')
+
+        # Build the path filters JSON array for the config
+        pathFiltersJson=$(echo $svc | jq -c '.pathFilters')
+        
+        cfg=$(mktemp)
+        cat > $cfg <<EOF
+    {
+      "isEnabled": true,
+      "isBlocking": $sblock,
+      "type":   { "id": "$status_type_id" },
+      "settings": {
+        "defaultDisplayName": "$disp",
+        "statusGenre": "$genre",
+        "statusName":  "$sname",
+        "invalidateOnSourceUpdate": true,
+        "scope": [{
+          "repositoryId": "$repoId",
+          "refName": "refs/heads/$branch",
+          "matchKind": "Exact",
+          "matchOptions": {
+            "filenamePatterns": $pathFiltersJson
+          }
+        }]
+      }
+    }
+    EOF
+        # Idempotent create or update
+        policy_id=$(az repos policy list --branch $branch --repository-id $repoId \
+          --query "[?settings.statusGenre=='$genre' && settings.statusName=='$sname'].id" -o tsv)
+        if [ -n "$policy_id" ]; then
+          az repos policy update --config $cfg --id $policy_id
+        else
+          az repos policy create --config $cfg
+        fi
+      done
+    done
+  env:
+    AZURE_DEVOPS_EXT_PAT: $(System.AccessToken)
+  displayName: 'Per-service policies'
+
+# ------------------------------------------------------------------
+# 5) Automatically included reviewers
+# ------------------------------------------------------------------
+- bash: |
+    set -euo pipefail
+    
+    repoId="$(Build.Repository.ID)"
+    branch='${{ parameters.branchName }}'
+    project="$(System.TeamProject)"
+    org="$(System.TeamFoundationCollectionUri)"
+    
+    echo "Setting up automatic reviewers for branch $branch"
+    echo "Repository ID: $repoId"
+    
+    # Set default project for Azure DevOps CLI
+    az devops configure --defaults organization="$org" project="$project"
+    
+    # Get required reviewer policy type ID - we know from the example it's "Required reviewers"
+    required_reviewer_type_id=$(az devops invoke --area policy --resource types \
+      --organization "$org" \
+      --route-parameters project="$project" \
+      --http-method GET --api-version 7.1 -o json |
+      jq -r '.value[] | select(.displayName=="Required reviewers") | .id')
+      
+    if [ -z "$required_reviewer_type_id" ]; then
+      echo "❌ Required reviewer policy type not found"; exit 1
+    fi
+    echo "Found Required reviewers policy type ID: $required_reviewer_type_id"
+    
+    # Function to get group ID by name
+    function get_group_id() {
+      local group_name="$1"
+      local group_id=""
+      
+      echo "Looking up ID for group: $group_name"
+      
+      # Try exact match on displayName first (most reliable)
+      group_id=$(az devops security group list --project "$project" --organization "$org" \
+        --output json | jq -r --arg name "$group_name" '.[] | select(.displayName==$name) | .originId' | head -1)
+        
+      if [ -z "$group_id" ]; then
+        # Try without project prefix if it exists
+        local simple_name=$(echo "$group_name" | sed -E 's/^\[[^\]]+\]\\//')
+        group_id=$(az devops security group list --project "$project" --organization "$org" \
+          --output json | jq -r --arg name "$simple_name" '.[] | select(.displayName==$name) | .originId' | head -1)
+        
+        if [ -z "$group_id" ]; then
+          # Try partial match on displayName
+          group_id=$(az devops security group list --project "$project" --organization "$org" \
+            --output json | jq -r --arg name "$simple_name" '.[] | select(.displayName | contains($name)) | .originId' | head -1)
+            
+          if [ -z "$group_id" ]; then
+            # Try project-level groups (principalName format is different)
+            group_id=$(az devops security group list --project "$project" --organization "$org" \
+              --output json | jq -r --arg name "$simple_name" '.[] | select(.principalName | contains($name)) | .originId' | head -1)
+              
+            if [ -z "$group_id" ]; then
+              echo "⚠️ Could not find ID for group: $group_name"
+            else
+              echo "Found ID for $group_name by principalName: $group_id"
+            fi
+          else
+            echo "Found ID for $group_name by partial displayName: $group_id"
+          fi
+        else
+          echo "Found ID for $group_name with simple name: $group_id"
+        fi
+      else
+        echo "Found ID for $group_name by exact displayName: $group_id"
+      fi
+      
+      echo "$group_id"
+    }
+    
+    # Process each reviewer configuration from parameters
+    echo '${{ convertToJson(parameters.autoIncludedReviewers) }}' | jq -c '.[]' | while read reviewer; do
+      # The displayName field is used just for logging and identification in the script
+      # It doesn't affect the actual policy creation
+      displayName=$(echo $reviewer | jq -r '.displayName')
+      groupName=$(echo $reviewer | jq -r '.groupName')
+      isRequiredReview=$(echo $reviewer | jq -r '.isRequiredReview')
+      canReviewOwnChanges=$(echo $reviewer | jq -r '.canReviewOwnChanges')
+      messageText=$(echo $reviewer | jq -r '.messageText' | sed 's/\\/\\\\/g' | sed 's/"/\\"/g')
+      pathFilters=$(echo $reviewer | jq -c '.pathFilters')
+      
+      echo "Setting up reviewer policy for group: $groupName (display: $displayName)"
+      
+      # Get the group ID directly from the group name in the parameters
+      group_id=$(get_group_id "$groupName")
+      
+      if [ -z "$group_id" ]; then
+        echo "⚠️ Could not find ID for group: $groupName - skipping"
+        continue
+      fi
+      
+      echo "Using group ID: $group_id for $groupName"
+      
+      # Create policy configuration file using the exact JSON structure as exported from Azure DevOps UI
+      config_file=$(mktemp)
+      
+      # Generate JSON config with variable interpolation
+      cat > "$config_file" << JSON
+    {
+      "isEnabled": true,
+      "isBlocking": $isRequiredReview,
+      "type": {
+        "id": "$required_reviewer_type_id"
+      },
+      "settings": {
+        "creatorVoteCounts": $canReviewOwnChanges,
+        "filenamePatterns": $pathFilters,
+        "message": "$messageText",
+        "minimumApproverCount": 1,
+        "requiredReviewerIds": [
+          "$group_id"
+        ],
+        "scope": [
+          {
+            "matchKind": "Exact",
+            "refName": "refs/heads/$branch",
+            "repositoryId": "$repoId"
+          }
+        ]
+      }
+    }
+    JSON
+      
+      # Debug: show the final configuration
+      echo "Policy configuration:"
+      cat "$config_file"
+      
+      # Check if policy already exists for this reviewer group
+      existing_policy_id=$(az repos policy list --branch $branch --repository-id $repoId \
+        --organization "$org" --project "$project" \
+        --query "[?type.displayName=='Required reviewers' && settings.requiredReviewerIds[0]=='$group_id'].id" \
+        -o tsv)
+      
+      if [ -n "$existing_policy_id" ]; then
+        echo "Updating existing policy for $displayName (ID: $existing_policy_id)"
+        az repos policy update --id "$existing_policy_id" --config "$config_file" \
+          --organization "$org" --project "$project"
+      else
+        echo "Creating new policy for $displayName"
+        az repos policy create --config "$config_file" \
+          --organization "$org" --project "$project"
+      fi
+      
+      # Clean up temp file
+      rm "$config_file"
+    done
+  env:
+    AZURE_DEVOPS_EXT_PAT: $(System.AccessToken)
+  displayName: 'Configure auto-included reviewers'
+

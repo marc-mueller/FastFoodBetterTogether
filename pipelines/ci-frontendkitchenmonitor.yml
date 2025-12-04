@@ -1,0 +1,58 @@
+name: ci-frontendkitchenmonitor
+
+trigger:
+  branches:
+    include:
+      - main
+      - release/*
+  paths:
+    include:
+      - src/services/frontendkitchenmonitor/**
+
+variables:
+  - template: config/var-pool.yml
+  - template: config/var-commonvariables.yml
+  - template: config/var-frontendkitchenmonitor.yml
+
+resources:
+  containers:
+  - container: worker
+    image: $(azureContainerRegistry)/fastfood-buildenv:$(NetCoreSdkVersion)
+    endpoint: 4taksDemoAcr
+
+jobs:
+  - template: build/job-buildcontainerizedservice.yml
+    parameters:
+      displayName: "Build Frontend Kitchen Monitor Service"
+      chartPath: '$(helmChartSourcePath)'
+      artifactName: '$(pipelineArtifactName)'
+      azureContainerRegistryServiceConnection: '$(azureContainerRegistryServiceConnection)'
+      netCoreAspNetVersion: '$(netCoreAspNetVersion)'
+      netCoreSdkVersion: '$(netCoreSdkVersion)'
+      helmVersion: '$(helmVersion)'
+      artifactStagingDirectory: '$(Build.ArtifactStagingDirectory)'
+      buildId: '$(Build.BuildId)'
+      buildNumber: '$(Build.BuildNumber)'
+      servicePaths:
+        - '$(componentPath)'
+      serviceTagPrefix: '$(versionTagPrefix)'
+      installMonotag: false
+      updateBuildNumber: true
+      nugetFeeds: []
+      dockerImages:
+        - dockerRepositoryName: '$(dockerRepositoryName)'
+          dockerFile: '$(dockerFilePath)'
+          buildContext: '$(Build.SourcesDirectory)/src'
+          dockerArguments: '--build-arg IMAGE_NET_ASPNET_VERSION=$(netCoreAspNetVersion) --build-arg IMAGE_NET_SDK_VERSION=$(netCoreSdkVersion)'
+          publishArtifacts:
+            - dockerfileTarget: "test"
+              imageLabel: "testresults"
+              directoryToCopy: "/testresults"
+              artifactName: "testresults"
+              publishType: "testResults"
+      pool:
+        ${{ if eq(variables['poolMode'], 'HostedAgent') }}:
+          vmImage: ${{ variables['poolVmImage'] }}
+        ${{ if ne(variables['poolMode'], 'HostedAgent') }}:
+          name: ${{ variables['buildPoolName'] }}
+      container: worker

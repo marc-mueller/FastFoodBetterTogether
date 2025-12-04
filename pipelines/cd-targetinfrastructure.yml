@@ -1,0 +1,109 @@
+name: cd-targetinfrastructure
+trigger: none
+resources:
+  pipelines:
+  - pipeline: CIBuild
+    source: ci-targetinfrastructure
+    trigger:
+      branches:
+        include:
+        - main
+        - feature/*
+        - topic/*
+        - fix/*
+        - hotfix/*
+        - pull/*
+        - refs/pull/*
+  containers:
+    - container: worker
+      image: $(azureContainerRegistry)/fastfood-buildenv:$(NetCoreSdkVersion)
+      endpoint: 4taksDemoAcr
+
+
+variables:
+  - template: config/var-pool.yml
+  - template: config/var-commonvariables.yml
+  - template: config/var-commonvariables-release.yml
+  - template: config/var-targetinfrastructure.yml
+  - group: fastfood-releasesecrets  
+
+stages:
+  - stage: Staging
+    condition: and(succeeded(), eq(variables['Build.SourceBranchName'], 'main'))
+    variables:
+      - name: stagename
+        value: staging
+      - name: namespace
+        value: $(stagename)
+    jobs:
+      - template: deploy/job-deployservicetok8s.yml
+        parameters:
+          environment: 'fastfood-$(stagename)'
+          namespace: '$(namespace)'
+          valuesFile: '$(helmChartArtifactValuesFileDownloadPath)'
+          artifactName: '$(pipelineArtifactName)'
+          chartPackage: '$(helmChartArtifactDownloadPath)'
+          kubernetesDeploymentServiceConnection: '$(kubernetesDeploymentServiceConnection)'
+          updateBuildNumber: true
+          
+          tokenizerSecrets:
+            - redisPassword
+          pool:
+            ${{ if eq(variables['poolMode'], 'HostedAgent') }}:
+              vmImage: ${{ variables['poolVmImage'] }}
+            ${{ if ne(variables['poolMode'], 'HostedAgent') }}:
+              name: ${{ variables['buildPoolName'] }}
+
+  - stage: Production
+    dependsOn: Staging
+    condition: and(succeeded(), eq(variables['Build.SourceBranchName'], 'main'))
+    variables:
+      - name: stagename
+        value: prod
+      - name: namespace
+        value: $(stagename)
+    jobs:
+      - template: deploy/job-deployservicetok8s.yml
+        parameters:
+          environment: 'fastfood-$(stagename)'
+          namespace: '$(namespace)'
+          valuesFile: '$(helmChartArtifactValuesFileDownloadPath)'
+          artifactName: '$(pipelineArtifactName)'
+          chartPackage: '$(helmChartArtifactDownloadPath)'
+          kubernetesDeploymentServiceConnection: '$(kubernetesDeploymentServiceConnection)'
+          updateBuildNumber: true
+          
+          tokenizerSecrets:
+            - redisPassword
+          pool:
+            ${{ if eq(variables['poolMode'], 'HostedAgent') }}:
+              vmImage: ${{ variables['poolVmImage'] }}
+            ${{ if ne(variables['poolMode'], 'HostedAgent') }}:
+              name: ${{ variables['buildPoolName'] }}
+
+  - stage: PullRequest
+    dependsOn: []
+    condition: and(succeeded(), ne(variables['System.PullRequest.PullRequestId'], ''))
+    variables:
+      - name: stagename
+        value: pr
+      - name: namespace
+        value: $(stagename)-$(System.PullRequest.PullRequestId)
+    jobs:
+      - template: deploy/job-deployservicetok8s.yml
+        parameters:
+          environment: 'fastfood-$(stagename)'
+          namespace: '$(namespace)'
+          valuesFile: '$(helmChartArtifactValuesFileDownloadPath)'
+          artifactName: '$(pipelineArtifactName)'
+          chartPackage: '$(helmChartArtifactDownloadPath)'
+          kubernetesDeploymentServiceConnection: '$(kubernetesDeploymentServiceConnection)'
+          updateBuildNumber: true
+          
+          tokenizerSecrets:
+            - redisPassword
+          pool:
+            ${{ if eq(variables['poolMode'], 'HostedAgent') }}:
+              vmImage: ${{ variables['poolVmImage'] }}
+            ${{ if ne(variables['poolMode'], 'HostedAgent') }}:
+              name: ${{ variables['buildPoolName'] }}

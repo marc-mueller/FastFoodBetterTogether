@@ -1,0 +1,28 @@
+variables:
+# - name: AzureSubscription
+#   value: 'Microsoft Azure Sponsorship'
+- name: azureContainerRegistryServiceConnection
+  value: 4taksDemoAcr
+- name: azureContainerRegistry
+  value: '4taksdemoacr.azurecr.io'
+- name: azureResourceGroup
+  value: 'aksDemo'
+- name: kubernetesCluster
+  value: 'dev-aks-k8sdemo-westeurope'
+- name: kubectlVersion
+  value: '1.26.0'
+- name: helmVersion
+  value: '3.12.0'
+- name: netCoreAspNetVersion
+  value: 10.0.0
+- name: NetCoreSdkVersion
+  value: 10.0.100
+- name: nodeVersion
+  value: '22'
+
+- name: dockerFilePath
+  value: 'src/services/$(folderNameComponent)/$(folderNameService)/Dockerfile'
+- name: helmChartSourcePath
+  value: 'src/services/$(folderNameComponent)/$(folderNameService)/chart/$(serviceName)'
+- name: componentPath
+  value: 'src/services/$(folderNameComponent)'

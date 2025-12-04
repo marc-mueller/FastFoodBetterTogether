@@ -1,0 +1,78 @@
+parameters:
+- name: artifactStagingDirectory
+  type: string
+  default:
+- name: artifactName
+  type: string
+  default: 
+- name: helmVersion
+  type: string
+  default: latest
+- name: kubectlVersion
+  type: string
+  default: latest
+- name: chartPath
+  type: string
+  default: 
+- name: chartVersion
+  type: string
+  default: '$(Build.BuildNumber)'
+- name: installHelm
+  type: boolean
+  default: true
+- name: installKubectl
+  type: boolean
+  default: true
+
+steps:
+- ${{ if eq(parameters.installKubectl, true) }}:
+  - task: KubectlInstaller@0
+    displayName: 'Install Kubectl ${{ parameters.kubectlVersion }}'
+    inputs:
+      kubectlVersion: '${{ parameters.kubectlVersion }}'
+      
+- ${{ if eq(parameters.installHelm, true) }}:
+  - task: HelmInstaller@1
+    displayName: 'Install Helm ${{ parameters.helmVersion }}'
+    inputs:
+      helmVersionToInstall: '${{ parameters.helmVersion }}'
+
+- task: HelmDeploy@0
+  displayName: 'helm package'
+  inputs:
+    command: package
+    chartPath: ${{ parameters.chartPath }}
+    destination: '${{ parameters.artifactStagingDirectory }}/${{ parameters.artifactName }}'
+    chartVersion: '${{ parameters.chartVersion }}'
+    save: false
+
+- script: |
+    echo "Copying values file to artifact staging directory"
+    mkdir -p '${{ parameters.artifactStagingDirectory }}/${{ parameters.artifactName }}/prod'
+    mkdir -p '${{ parameters.artifactStagingDirectory }}/${{ parameters.artifactName }}/staging'
+    mkdir -p '${{ parameters.artifactStagingDirectory }}/${{ parameters.artifactName }}/pr'
+    
+    # Check if source files exist before copying
+    if [ -f 'pipelines/config/prod/$(folderNameComponent)/values.yml' ]; then
+      cp 'pipelines/config/prod/$(folderNameComponent)/values.yml' '${{ parameters.artifactStagingDirectory }}/${{ parameters.artifactName }}/prod/values.yml'
+    else
+      echo "Warning: Source file pipelines/config/prod/$(folderNameComponent)/values.yml not found"
+    fi
+    
+    if [ -f 'pipelines/config/staging/$(folderNameComponent)/values.yml' ]; then
+      cp 'pipelines/config/staging/$(folderNameComponent)/values.yml' '${{ parameters.artifactStagingDirectory }}/${{ parameters.artifactName }}/staging/values.yml'
+    else
+      echo "Warning: Source file pipelines/config/staging/$(folderNameComponent)/values.yml not found"
+    fi
+    
+    if [ -f 'pipelines/config/pr/$(folderNameComponent)/values.yml' ]; then
+      cp 'pipelines/config/pr/$(folderNameComponent)/values.yml' '${{ parameters.artifactStagingDirectory }}/${{ parameters.artifactName }}/pr/values.yml'
+    else
+      echo "Warning: Source file pipelines/config/pr/$(folderNameComponent)/values.yml not found"
+    fi
+
+  displayName: 'Copy values file to artifact staging directory'
+ 
+- publish: '${{ parameters.artifactStagingDirectory }}/${{ parameters.artifactName }}'
+  artifact: '${{ parameters.artifactName }}'
+  displayName: 'Publish Artifact: ${{ parameters.artifactName }}'

@@ -1,0 +1,125 @@
+name: cd-frontendcustomerorderstatus
+trigger: none
+resources:
+  pipelines:
+  - pipeline: CIBuild
+    source: ci-frontendcustomerorderstatus
+    trigger:
+      branches:
+        include:
+        - main
+        - feature/*
+        - topic/*
+        - fix/*
+        - hotfix/*
+        - pull/*
+        - refs/pull/*
+  containers:
+  - container: worker
+    image: $(azureContainerRegistry)/fastfood-buildenv:$(NetCoreSdkVersion)
+    endpoint: 4taksDemoAcr
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+variables:
+  - template: config/var-pool.yml
+  - template: config/var-commonvariables.yml
+  - template: config/var-commonvariables-release.yml
+  - template: config/var-frontendcustomerorderstatus.yml
+
+stages:
+  - stage: Staging
+    condition: and(succeeded(), eq(variables['Build.SourceBranchName'], 'main'))
+    variables:
+      - name: stagename
+        value: staging
+      - name: namespace
+        value: $(stagename)
+    jobs:
+      - template: deploy/job-deployservicetok8s.yml
+        parameters:
+          container: worker
+          environment: 'fastfood-$(stagename)'
+          namespace: '$(namespace)'
+          valuesFile: '$(helmChartArtifactValuesFileDownloadPath)'
+          artifactName: '$(pipelineArtifactName)'
+          chartPackage: '$(helmChartArtifactDownloadPath)'
+          kubernetesDeploymentServiceConnection: '$(kubernetesDeploymentServiceConnection)'
+          updateBuildNumber: true
+          
+          pool:
+            ${{ if eq(variables['poolMode'], 'HostedAgent') }}:
+              vmImage: ${{ variables['poolVmImage'] }}
+            ${{ if ne(variables['poolMode'], 'HostedAgent') }}:
+              name: ${{ variables['releasePoolDevTestName'] }}
+
+  - stage: Production
+    dependsOn: Staging
+    condition: and(succeeded(), eq(variables['Build.SourceBranchName'], 'main'))
+    variables:
+      - name: stagename
+        value: prod
+      - name: namespace
+        value: $(stagename)
+    jobs:
+      - template: deploy/job-deployservicetok8s.yml
+        parameters:
+          container: worker
+          environment: 'fastfood-$(stagename)'
+          namespace: '$(namespace)'
+          valuesFile: '$(helmChartArtifactValuesFileDownloadPath)'
+          artifactName: '$(pipelineArtifactName)'
+          chartPackage: '$(helmChartArtifactDownloadPath)'
+          kubernetesDeploymentServiceConnection: '$(kubernetesDeploymentServiceConnection)'
+          updateBuildNumber: true
+          
+          pool:
+            ${{ if eq(variables['poolMode'], 'HostedAgent') }}:
+              vmImage: ${{ variables['poolVmImage'] }}
+            ${{ if ne(variables['poolMode'], 'HostedAgent') }}:
+              name: ${{ variables['releasePoolProdName'] }}
+
+  - stage: PullRequest
+    dependsOn: []
+    condition: and(succeeded(), ne(variables['System.PullRequest.PullRequestId'], ''))
+    variables:
+      - name: stagename
+        value: pr
+      - name: namespace
+        value: $(stagename)-$(System.PullRequest.PullRequestId)
+      - name: redisDB
+        value: $[counter(format('{0:yyyyMM}', pipeline.startTime), 3)]
+    jobs:
+      - template: deploy/job-deployservicetok8s.yml
+        parameters:
+          container: worker
+          environment: 'fastfood-$(stagename)'
+          namespace: '$(namespace)'
+          valuesFile: '$(helmChartArtifactValuesFileDownloadPath)'
+          artifactName: '$(pipelineArtifactName)'
+          chartPackage: '$(helmChartArtifactDownloadPath)'
+          kubernetesDeploymentServiceConnection: '$(kubernetesDeploymentServiceConnection)'
+          updateBuildNumber: true
+          
+          pool:
+            ${{ if eq(variables['poolMode'], 'HostedAgent') }}:
+              vmImage: ${{ variables['poolVmImage'] }}
+            ${{ if ne(variables['poolMode'], 'HostedAgent') }}:
+              name: ${{ variables['releasePoolDevTestName'] }}
+          jobName: 'deploy'
+      - template: deploy/job-verifyprdeployment.yml
+        parameters:
+          container: worker
+          serviceName: '$(serviceName)'
+          displayName: 'Run System Tests for PR $(System.PullRequest.PullRequestId)'
+          posUrl: 'selfservicepos.fastfood.$(namespace).aksdemo.4tecture.ch'
+          kitchenUrl: 'kitchenmonitor.fastfood.$(namespace).aksdemo.4tecture.ch'
+          orderStatusUrl: 'customerorderstatus.fastfood.$(namespace).aksdemo.4tecture.ch'
+          pool:
+            ${{ if eq(variables['poolMode'], 'HostedAgent') }}:
+              vmImage: ${{ variables['poolVmImage'] }}
+            ${{ if ne(variables['poolMode'], 'HostedAgent') }}:
+              name: ${{ variables['releasePoolDevTestName'] }}
+          jobName: 'verifydeployment'
+          dependsOn: ['deploy']
