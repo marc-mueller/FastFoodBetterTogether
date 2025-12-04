@@ -1,0 +1,67 @@
+# File: step-setuniversalstatus.yml
+# Purpose: Universal PR/commit status that works with both Azure Repos and GitHub
+# Automatically detects repository type and calls the appropriate template
+
+parameters:
+  # Common parameters
+  - name: contextName
+    type: string
+  - name: state
+    type: string
+  - name: description
+    type: string
+  - name: targetUrl
+    type: string
+    default: ''
+  
+  # Azure Repos specific
+  - name: pullRequestId
+    type: string
+    default: '$(System.PullRequest.PullRequestId)'
+  - name: genre
+    type: string
+    default: ''
+  - name: iteration
+    type: string
+    default: '$(System.PullRequest.PullRequestIteration)'
+  
+  # GitHub specific
+  - name: commitSha
+    type: string
+    default: '$(Build.SourceVersion)'
+  - name: githubRepoOwner
+    type: string
+    default: 'marc-mueller'
+  - name: githubRepoName
+    type: string
+    default: 'FastFoodBetterTogether'
+
+steps:
+- bash: |
+    echo "Repository Provider: $(Build.Repository.Provider)"
+    echo "Setting status via appropriate mechanism..."
+  displayName: "Detect repository type"
+
+# For GitHub repositories
+- ${{ if eq(variables['Build.Repository.Provider'], 'GitHub') }}:
+  - template: step-setgithubstatus.yml
+    parameters:
+      commitSha: ${{ parameters.commitSha }}
+      contextName: ${{ parameters.contextName }}
+      state: ${{ parameters.state }}
+      description: ${{ parameters.description }}
+      targetUrl: ${{ parameters.targetUrl }}
+      githubRepoOwner: ${{ parameters.githubRepoOwner }}
+      githubRepoName: ${{ parameters.githubRepoName }}
+
+# For Azure Repos (TfsGit)
+- ${{ if ne(variables['Build.Repository.Provider'], 'GitHub') }}:
+  - template: step-setprstatus.yml
+    parameters:
+      pullRequestId: ${{ parameters.pullRequestId }}
+      contextName: ${{ parameters.contextName }}
+      state: ${{ parameters.state }}
+      description: ${{ parameters.description }}
+      targetUrl: ${{ parameters.targetUrl }}
+      genre: ${{ parameters.genre }}
+      iteration: ${{ parameters.iteration }}

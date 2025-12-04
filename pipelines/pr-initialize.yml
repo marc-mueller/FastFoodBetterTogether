@@ -2,6 +2,12 @@ name: pr-initialize
 
 trigger: none
 
+pr:
+  branches:
+    include:
+      - main
+      - release/*
+
 resources:
   pipelines:
   - pipeline: CIBuildTargetInfrastructure

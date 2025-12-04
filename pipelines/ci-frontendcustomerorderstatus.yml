@@ -9,6 +9,15 @@ trigger:
     include:
       - src/services/frontendcustomerorderstatus/**
 
+pr:
+  branches:
+    include:
+      - main
+      - release/*
+  paths:
+    include:
+      - src/services/frontendcustomerorderstatus/**
+
 variables:
   - template: config/var-pool.yml
   - template: config/var-commonvariables.yml

@@ -1,22 +1,26 @@
 trigger: none
 
+# NOTE: For GitHub repositories, this pipeline should be triggered manually when a PR is closed/abandoned.
+# Azure Repos-specific webhooks are not available for GitHub repositories.
+# Alternative: Use GitHub Actions to call this pipeline via Azure DevOps REST API when PR events occur.
+
 variables:
   - template: config/var-pool.yml
   - template: config/var-commonvariables.yml
   - template: config/var-commonvariables-release.yml
 
-resources:
-  # https://dev.azure.com/4tecture-demo/_apis/public/distributedtask/webhooks/fastfoodPrUpdated?api-version=6.0-preview
-  webhooks:
-    - webhook: fastfoodPrUpdated                ### Webhook alias
-      connection: FastfoodPREventsConnection    ### Incoming webhook service connection
-      filters:
-      - path: eventType
-        value: git.pullrequest.updated
-      - path: publisherId
-        value: tfs
-      - path: resource.repository.name
-        value: FastFood
+# Webhook resources are only supported for Azure Repos, not GitHub
+# resources:
+#   webhooks:
+#     - webhook: fastfoodPrUpdated
+#       connection: FastfoodPREventsConnection
+#       filters:
+#       - path: eventType
+#         value: git.pullrequest.updated
+#       - path: publisherId
+#         value: tfs
+#       - path: resource.repository.name
+#         value: FastFood
   containers:
     - container: worker
       image: $(azureContainerRegistry)/fastfood-buildenv:$(NetCoreSdkVersion)

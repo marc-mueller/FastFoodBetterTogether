@@ -1,0 +1,174 @@
+# File: setup-github-branchprotection.yml
+# Purpose: Configure GitHub branch protection rules for the main branch
+# Note: This replaces Azure Repos branch policies with GitHub branch protection
+# Docs: https://docs.github.com/en/rest/branches/branch-protection
+
+trigger: none
+
+parameters:
+- name: branchName
+  type: string
+  default: 'main'
+
+- name: githubRepoOwner
+  type: string
+  default: 'marc-mueller'
+
+- name: githubRepoName
+  type: string
+  default: 'FastFoodBetterTogether'
+
+- name: minimumApprovers
+  type: number
+  default: 1
+
+- name: requireCodeOwnerReviews
+  type: boolean
+  default: false
+
+- name: dismissStaleReviews
+  type: boolean
+  default: true
+
+- name: requireLinearHistory
+  type: boolean
+  default: false
+
+- name: allowForcePushes
+  type: boolean
+  default: false
+
+- name: allowDeletions
+  type: boolean
+  default: false
+
+- name: requiredStatusChecks
+  type: object
+  default:
+    # Generic checks
+    - context: 'fastfood-security-scan'
+      
+    # Service-specific CI checks
+    - context: 'ci-orderservice'
+    - context: 'ci-kitchenservice'
+    - context: 'ci-financeservice'
+    - context: 'ci-frontendcustomerorderstatus'
+    - context: 'ci-frontendkitchenmonitor'
+    - context: 'ci-frontendselfservicepos'
+    
+    # PR environment checks
+    - context: 'pr-deployment-orderservice'
+    - context: 'pr-deployment-kitchenservice'
+    - context: 'pr-deployment-financeservice'
+    - context: 'pr-deployment-frontendcustomerorderstatus'
+    - context: 'pr-deployment-frontendkitchenmonitor'
+    - context: 'pr-deployment-frontendselfservicepos'
+    
+    # Work item check
+    - context: 'fastfood-wi-content-check'
+
+pool:
+  vmImage: ubuntu-latest
+
+steps:
+- checkout: none
+
+- bash: |
+    set -euo pipefail
+    
+    OWNER="${{ parameters.githubRepoOwner }}"
+    REPO="${{ parameters.githubRepoName }}"
+    BRANCH="${{ parameters.branchName }}"
+    
+    echo "Configuring GitHub branch protection for $OWNER/$REPO on branch $BRANCH"
+    
+    # Build the list of required status checks
+    STATUS_CHECKS='${{ convertToJson(parameters.requiredStatusChecks) }}'
+    
+    # Extract just the context names into an array
+    CONTEXTS=$(echo "$STATUS_CHECKS" | jq -r '[.[].context]')
+    
+    # Build the branch protection configuration
+    PROTECTION_CONFIG=$(jq -n \
+      --argjson contexts "$CONTEXTS" \
+      --argjson min_approvers ${{ parameters.minimumApprovers }} \
+      --argjson code_owner_reviews ${{ parameters.requireCodeOwnerReviews }} \
+      --argjson dismiss_stale ${{ parameters.dismissStaleReviews }} \
+      --argjson linear_history ${{ parameters.requireLinearHistory }} \
+      --argjson force_push ${{ parameters.allowForcePushes }} \
+      --argjson allow_deletions ${{ parameters.allowDeletions }} \
+      '{
+        required_status_checks: {
+          strict: true,
+          contexts: $contexts
+        },
+        enforce_admins: false,
+        required_pull_request_reviews: {
+          dismiss_stale_reviews: $dismiss_stale,
+          require_code_owner_reviews: $code_owner_reviews,
+          required_approving_review_count: $min_approvers
+        },
+        restrictions: null,
+        required_linear_history: $linear_history,
+        allow_force_pushes: $force_push,
+        allow_deletions: $allow_deletions,
+        required_conversation_resolution: false
+      }')
+    
+    echo "Branch protection configuration:"
+    echo "$PROTECTION_CONFIG" | jq '.'
+    
+    # Apply branch protection using GitHub API
+    # The GitHub PAT should be provided via the GITHUB_TOKEN environment variable
+    if [ -z "${GITHUB_TOKEN:-}" ]; then
+      echo "ERROR: GITHUB_TOKEN environment variable is not set"
+      echo "Please configure a GitHub Personal Access Token with 'repo' scope as a pipeline secret"
+      exit 1
+    fi
+    
+    echo "Applying branch protection to $OWNER/$REPO branch $BRANCH..."
+    
+    RESPONSE=$(curl -X PUT \
+      -H "Accept: application/vnd.github+json" \
+      -H "Authorization: Bearer ${GITHUB_TOKEN}" \
+      -H "X-GitHub-Api-Version: 2022-11-28" \
+      -d "$PROTECTION_CONFIG" \
+      "https://api.github.com/repos/$OWNER/$REPO/branches/$BRANCH/protection" \
+      -w "\n%{http_code}" \
+      -s)
+    
+    HTTP_CODE=$(echo "$RESPONSE" | tail -n 1)
+    BODY=$(echo "$RESPONSE" | sed '$d')
+    
+    if [ "$HTTP_CODE" = "200" ]; then
+      echo "✓ Branch protection successfully configured"
+      echo "$BODY" | jq '.'
+    else
+      echo "✗ Failed to configure branch protection (HTTP $HTTP_CODE)"
+      echo "$BODY" | jq '.' || echo "$BODY"
+      exit 1
+    fi
+    
+  displayName: 'Configure GitHub Branch Protection'
+  env:
+    GITHUB_TOKEN: $(GitHubToken)
+
+- bash: |
+    echo ""
+    echo "============================================"
+    echo "GitHub Branch Protection Configuration"
+    echo "============================================"
+    echo ""
+    echo "Branch protection has been configured for branch: ${{ parameters.branchName }}"
+    echo ""
+    echo "Key settings:"
+    echo "  - Minimum approvers: ${{ parameters.minimumApprovers }}"
+    echo "  - Dismiss stale reviews: ${{ parameters.dismissStaleReviews }}"
+    echo "  - Require linear history: ${{ parameters.requireLinearHistory }}"
+    echo ""
+    echo "Next steps:"
+    echo "  1. Verify settings at: https://github.com/${{ parameters.githubRepoOwner }}/${{ parameters.githubRepoName }}/settings/branches"
+    echo "  2. Ensure Azure DevOps pipelines report status to GitHub (configured in pipeline YAML)"
+    echo "  3. Test by creating a pull request"
+    echo ""
+  displayName: 'Summary'

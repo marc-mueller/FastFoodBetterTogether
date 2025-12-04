@@ -6,6 +6,14 @@ trigger:
   paths:
     include:
       - infrastructure/BuildEnvironment/**
+
+pr:
+  branches:
+    include:
+      - main
+  paths:
+    include:
+      - infrastructure/BuildEnvironment/**
 resources:
 - repo: self
 

@@ -1,4 +1,13 @@
 # azure-pipelines/templates/pr-status.yml
+# 
+# NOTE: This template sets PR status for Azure Repos.
+# For GitHub repositories, use step-setgithubstatus.yml instead,
+# or configure your pipeline to detect the repository type and call the appropriate template.
+# 
+# The Build.Repository.Provider variable can be used to detect:
+#   - 'TfsGit' for Azure Repos
+#   - 'GitHub' for GitHub repositories
+
 parameters:
   - name: pullRequestId
     type: string

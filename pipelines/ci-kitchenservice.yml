@@ -9,6 +9,15 @@ trigger:
     include:
       - src/services/kitchen/**
 
+pr:
+  branches:
+    include:
+      - main
+      - release/*
+  paths:
+    include:
+      - src/services/kitchen/**
+
 variables:
   - template: config/var-pool.yml
   - template: config/var-commonvariables.yml

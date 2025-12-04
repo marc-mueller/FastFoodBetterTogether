@@ -53,7 +53,7 @@ jobs:
           ${{ if ne(parameters.testFilter, '') }}:
             testFilter: '${{ parameters.testFilter }}'
 
-      - template: ../pullrequest/step-setprstatus.yml
+      - template: ../pullrequest/step-setuniversalstatus.yml
         parameters:
           state: 'succeeded'
           description: '${{ parameters.serviceName }} PR Deployment Verified'

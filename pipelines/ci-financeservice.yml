@@ -9,6 +9,15 @@ trigger:
     include:
       - src/services/finance/**
 
+pr:
+  branches:
+    include:
+      - main
+      - release/*
+  paths:
+    include:
+      - src/services/finance/**
+
 variables:
   - template: config/var-pool.yml
   - template: config/var-commonvariables.yml

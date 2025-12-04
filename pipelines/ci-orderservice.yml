@@ -9,6 +9,15 @@ trigger:
     include:
       - src/services/order/**
 
+pr:
+  branches:
+    include:
+      - main
+      - release/*
+  paths:
+    include:
+      - src/services/order/**
+
 resources:
   containers:
   - container: worker

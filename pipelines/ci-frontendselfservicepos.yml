@@ -9,6 +9,15 @@ trigger:
     include:
       - src/services/frontendselfservicepos/**
 
+pr:
+  branches:
+    include:
+      - main
+      - release/*
+  paths:
+    include:
+      - src/services/frontendselfservicepos/**
+
 variables:
   - template: config/var-pool.yml
   - template: config/var-commonvariables.yml

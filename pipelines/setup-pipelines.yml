@@ -76,10 +76,15 @@ parameters:
   displayName: 'Branch name (where to create pipelines in)'
   type: string
   default: '$(Build.SourceBranch)'
+- name: repositoryType
+  displayName: 'Repository type (github or tfsgit)'
+  type: string
+  default: 'github'
 
 variables:
   repoName:    '${{ parameters.repoName }}'
   branchName:  '${{ parameters.branchName }}'
+  repositoryType: '${{ parameters.repositoryType }}'
 
 steps:
 - checkout: none
@@ -97,7 +102,7 @@ steps:
       az pipelines create `
         --name "${{ pipeline.name }}" `
         --folder-path "${{ pipeline.folder }}" `
-        --repository-type tfsgit `
+        --repository-type $(repositoryType) `
         --repository $(repoName) `
         --branch $(branchName) `
         --yaml-path ${{ pipeline.yaml }}
