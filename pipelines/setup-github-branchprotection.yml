@@ -47,7 +47,6 @@ parameters:
   default:
     # Generic checks
     - context: 'fastfood-security-scan'
-      
     # Service-specific CI checks
     - context: 'ci-orderservice'
     - context: 'ci-kitchenservice'

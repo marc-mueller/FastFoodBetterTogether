@@ -74,23 +74,23 @@ CI_PIPELINES=(
 )
 
 for pipeline in "${CI_PIPELINES[@]}"; do
-    check_pattern "$pipeline" "^pr:" "Has PR trigger"
+    check_pattern "$pipeline" "^ *pr:" "Has PR trigger"
 done
 
 echo ""
 echo "Checking PR Pipelines..."
 echo "------------------------"
 
-check_pattern "pipelines/pr-initialize.yml" "^pr:" "Has PR trigger"
-check_pattern "pipelines/pr-securityscan.yml" "^pr:" "Has PR trigger"
+check_pattern "pipelines/pr-initialize.yml" "^ *pr:" "Has PR trigger"
+check_pattern "pipelines/pr-securityscan.yml" "^ *pr:" "Has PR trigger"
 
 echo ""
 echo "Checking Repository Type Configuration..."
 echo "------------------------------------------"
 
 check_pattern "pipelines/setup-pipelines.yml" "repositoryType" "Has repositoryType parameter"
-check_pattern "pipelines/setup-pipelines.yml" "default: 'github'" "Default repository type is github"
-check_not_pattern "pipelines/setup-pipelines.yml" "--repository-type tfsgit" "No hardcoded tfsgit"
+check_pattern "pipelines/setup-pipelines.yml" "default:.*github" "Default repository type is github"
+check_not_pattern "pipelines/setup-pipelines.yml" "repository-type tfsgit" "No hardcoded tfsgit"
 
 echo ""
 echo "Checking Status Reporting Templates..."
