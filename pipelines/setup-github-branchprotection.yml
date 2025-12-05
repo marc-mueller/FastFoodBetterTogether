@@ -4,6 +4,7 @@
 # Docs: https://docs.github.com/en/rest/branches/branch-protection
 
 trigger: none
+pr: none
 
 parameters:
 - name: branchName
@@ -92,44 +93,45 @@ steps:
     
     echo "Configuring GitHub branch protection for $OWNER/$REPO on branch $BRANCH"
     
-    # Build the list of required status checks
-    STATUS_CHECKS='${{ convertToJson(parameters.requiredStatusChecks) }}'
+    # Full JSON for required status checks (list of { context: "..." })
+    STATUS_CHECKS_JSON='${{ convertToJson(parameters.requiredStatusChecks) }}'
     
-    # Extract just the context names into an array
-    CONTEXTS=$(echo "$STATUS_CHECKS" | jq -r '[.[].context]')
+    echo "Required status checks JSON:"
+    echo "$STATUS_CHECKS_JSON" | jq '.'
     
     # Build the branch protection configuration
     PROTECTION_CONFIG=$(jq -n \
-      --argjson contexts "$CONTEXTS" \
-      --argjson min_approvers ${{ parameters.minimumApprovers }} \
-      --argjson code_owner_reviews ${{ parameters.requireCodeOwnerReviews }} \
-      --argjson dismiss_stale ${{ parameters.dismissStaleReviews }} \
-      --argjson linear_history ${{ parameters.requireLinearHistory }} \
-      --argjson force_push ${{ parameters.allowForcePushes }} \
-      --argjson allow_deletions ${{ parameters.allowDeletions }} \
-      '{
+      --argjson checks "$STATUS_CHECKS_JSON" \
+      --arg min_approvers "${{ parameters.minimumApprovers }}" \
+      --arg code_owner_reviews "${{ parameters.requireCodeOwnerReviews }}" \
+      --arg dismiss_stale "${{ parameters.dismissStaleReviews }}" \
+      --arg linear_history "${{ parameters.requireLinearHistory }}" \
+      --arg force_push "${{ parameters.allowForcePushes }}" \
+      --arg allow_deletions "${{ parameters.allowDeletions }}" \
+      '
+      def bool($s): ($s | ascii_downcase) == "true";
+
+      {
         required_status_checks: {
           strict: true,
-          contexts: $contexts
+          contexts: [ $checks[].context ]
         },
         enforce_admins: false,
         required_pull_request_reviews: {
-          dismiss_stale_reviews: $dismiss_stale,
-          require_code_owner_reviews: $code_owner_reviews,
-          required_approving_review_count: $min_approvers
+          dismiss_stale_reviews: bool($dismiss_stale),
+          require_code_owner_reviews: bool($code_owner_reviews),
+          required_approving_review_count: ($min_approvers | tonumber)
         },
         restrictions: null,
-        required_linear_history: $linear_history,
-        allow_force_pushes: $force_push,
-        allow_deletions: $allow_deletions,
+        required_linear_history: bool($linear_history),
+        allow_force_pushes: bool($force_push),
+        allow_deletions: bool($allow_deletions),
         required_conversation_resolution: false
       }')
     
     echo "Branch protection configuration:"
     echo "$PROTECTION_CONFIG" | jq '.'
     
-    # Apply branch protection using GitHub API
-    # The GitHub token is provided via the GetGitHubToken task
     if [ -z "${GITHUB_TOKEN:-}" ]; then
       echo "WARNING: GITHUB_TOKEN environment variable is not set"
       echo "The GetGitHubToken task may not have run successfully, or the extension may not be installed."
@@ -158,7 +160,6 @@ steps:
       echo "$BODY" | jq '.' || echo "$BODY"
       exit 1
     fi
-    
   displayName: 'Configure GitHub Branch Protection'
   env:
     GITHUB_TOKEN: $(GitHubToken)

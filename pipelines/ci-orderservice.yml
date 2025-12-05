@@ -17,6 +17,8 @@ pr:
   paths:
     include:
       - src/services/order/**
+      - pipelines/ci-orderservice.yml
+      - pipelines/cd-orderservice.yml
 
 resources:
   containers:

@@ -1,5 +1,6 @@
 name: cd-frontendselfservicepos
 trigger: none
+pr: none
 resources:
   pipelines:
   - pipeline: CIBuild

@@ -1,5 +1,6 @@
 name: cd-frontendkitchenmonitor
 trigger: none
+pr: none
 resources:
   pipelines:
   - pipeline: CIBuild

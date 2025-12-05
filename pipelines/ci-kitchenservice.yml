@@ -17,6 +17,8 @@ pr:
   paths:
     include:
       - src/services/kitchen/**
+      - pipelines/ci-kitchenservice.yml
+      - pipelines/cd-kitchenservice.yml
 
 variables:
   - template: config/var-pool.yml

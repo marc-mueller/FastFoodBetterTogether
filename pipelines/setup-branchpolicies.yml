@@ -1,4 +1,5 @@
 trigger: none          # run on demand (manual or scheduled)
+pr: none
 
 # NOTE: For GitHub repositories, this pipeline configures Azure DevOps build validation policies.
 # GitHub branch protection rules must be configured separately using setup-github-branchprotection.yml

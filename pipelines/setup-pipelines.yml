@@ -4,6 +4,7 @@
 # Note    : This pipeline uses the OAuth token and requires additional permissions to be able to create new pipelines.
 
 trigger: none
+pr: none
 
 parameters:
 - name: pipelines

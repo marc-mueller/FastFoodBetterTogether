@@ -17,6 +17,8 @@ pr:
   paths:
     include:
       - src/services/frontendcustomerorderstatus/**
+      - pipelines/ci-frontendcustomerorderstatus.yml
+      - pipelines/cd-frontendcustomerorderstatus.yml
 
 variables:
   - template: config/var-pool.yml

@@ -17,6 +17,8 @@ pr:
   paths:
     include:
       - src/services/frontendselfservicepos/**
+      - pipelines/ci-frontendselfservicepos.yml
+      - pipelines/cd-frontendselfservicepos.yml
 
 variables:
   - template: config/var-pool.yml

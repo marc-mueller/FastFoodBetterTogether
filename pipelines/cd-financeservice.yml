@@ -1,5 +1,6 @@
 name: cd-financeservice
 trigger: none
+pr: none
 resources:
   pipelines:
   - pipeline: CIBuild

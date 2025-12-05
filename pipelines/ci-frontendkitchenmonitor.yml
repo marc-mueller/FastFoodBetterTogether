@@ -17,6 +17,8 @@ pr:
   paths:
     include:
       - src/services/frontendkitchenmonitor/**
+      - pipelines/ci-frontendkitchenmonitor.yml
+      - pipelines/cd-frontendkitchenmonitor.yml
 
 variables:
   - template: config/var-pool.yml

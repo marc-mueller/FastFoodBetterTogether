@@ -17,6 +17,8 @@ pr:
   paths:
     include:
       - src/services/finance/**
+      - pipelines/ci-financeservice.yml
+      - pipelines/cd-financeservice.yml
 
 variables:
   - template: config/var-pool.yml

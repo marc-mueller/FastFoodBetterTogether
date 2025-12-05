@@ -17,6 +17,8 @@ pr:
   paths:
     include:
       - src/chart/daprenv/**
+      - pipelines/ci-targetinfrastructure.yml
+      - pipelines/cd-targetinfrastructure.yml
 
 variables:
   - template: config/var-pool.yml
