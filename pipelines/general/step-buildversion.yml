@@ -68,18 +68,23 @@ steps:
       if [[ -n "${SYSTEM_PULLREQUEST_PULLREQUESTID:-}" ]]; then
         echo "Pull Request build detected: PR #${SYSTEM_PULLREQUEST_PULLREQUESTID}"
 
-        # Extract branch name
+        # Extract repo owner + name (Azure Pipelines always provides this)
+        FULL_REPO="${BUILD_REPOSITORY_NAME}"            # e.g. "marc-mueller/FastFoodBetterTogether"
+        OWNER="${FULL_REPO%%/*}"
+        REPO="${FULL_REPO##*/}"
+
+        echo "Repository detected as: owner=$OWNER repo=$REPO"
+
+        # Extract branch name from PR source
         SOURCE_BRANCH=$(echo "${SYSTEM_PULLREQUEST_SOURCEBRANCH}" | sed -E 's|^refs/heads/||')
         BRANCH_SUFFIX=$(echo "$SOURCE_BRANCH" | sed -E 's|.*/||')
         PR_BRANCH_ID=$(echo "$BRANCH_SUFFIX" | tr '[:upper:]' '[:lower:]' \
           | tr -c '[:alnum:]' '-' | sed -E 's/-+/-/g; s/^-|-$//g' | cut -c1-8)
 
-        # Get PR commit count from GitHub to simulate "iteration"
-        OWNER="${{ parameters.githubRepoOwner }}"
-        REPO="${{ parameters.githubRepoName }}"
+        # ---- NEW: Determine PR iteration using GitHub API ----
         PR="${SYSTEM_PULLREQUEST_PULLREQUESTID}"
 
-        echo "Fetching PR commit count from GitHub..."
+        echo "Fetching PR commit count from GitHub for $OWNER/$REPO PR #$PR..."
         PR_COMMITS=$(curl -s \
           -H "Authorization: Bearer ${GITHUB_TOKEN}" \
           -H "Accept: application/vnd.github+json" \
@@ -87,7 +92,7 @@ steps:
           | jq -r '.commits')
 
         if [[ -z "$PR_COMMITS" || "$PR_COMMITS" == "null" ]]; then
-            echo "Could not retrieve PR commit count, fallback to 1"
+            echo "Could not determine PR commit count, fallback to 1"
             PR_COMMITS=1
         fi
 
