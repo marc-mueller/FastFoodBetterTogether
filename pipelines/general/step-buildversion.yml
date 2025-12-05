@@ -92,11 +92,6 @@ steps:
         ITERATION=$(printf "%03d" "$PR_COMMITS")
 
         VERSION="$BASE_VERSION-$BRANCH_ID-$ITERATION"
-
-        # Define AzurePipelines-style PR variables for GitHub
-        echo "##vso[task.setvariable variable=System.PullRequest.PullRequestId]$PR_NUMBER"
-        echo "##vso[task.setvariable variable=System.PullRequest.PullRequestIteration]$ITERATION"
-
       else
         # Use branch name as prerelease id for non-PR builds
         # Get the part after the last slash, or the whole branch name if no slash
