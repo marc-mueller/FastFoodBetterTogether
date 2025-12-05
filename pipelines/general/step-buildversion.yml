@@ -65,30 +65,26 @@ steps:
         COUNTER=$(printf "%03d" $((PR_COUNT - 1)))
       fi
       # Check if we're in a PR build
-      if [[ -n "${SYSTEM_PULLREQUEST_PULLREQUESTID:-}" ]]; then
-        echo "Pull Request build detected: PR #${SYSTEM_PULLREQUEST_PULLREQUESTID}"
+      if [[ "$BUILD_SOURCEBRANCH" =~ ^refs/pull/([0-9]+)/ ]]; then
+        PR_NUMBER="${BASH_REMATCH[1]}"
+        echo "GitHub PR detected: PR #$PR_NUMBER"
 
-        # Extract repo owner + name (Azure Pipelines always provides this)
-        FULL_REPO="${BUILD_REPOSITORY_NAME}"            # e.g. "marc-mueller/FastFoodBetterTogether"
+        # extract OWNER / REPO
+        FULL_REPO="${BUILD_REPOSITORY_NAME}"   # e.g. "marc-mueller/FastFoodBetterTogether"
         OWNER="${FULL_REPO%%/*}"
         REPO="${FULL_REPO##*/}"
+        echo "Repository detected as owner=$OWNER repo=$REPO"
 
-        echo "Repository detected as: owner=$OWNER repo=$REPO"
-
-        # Extract branch name from PR source
-        SOURCE_BRANCH=$(echo "${SYSTEM_PULLREQUEST_SOURCEBRANCH}" | sed -E 's|^refs/heads/||')
-        BRANCH_SUFFIX=$(echo "$SOURCE_BRANCH" | sed -E 's|.*/||')
-        PR_BRANCH_ID=$(echo "$BRANCH_SUFFIX" | tr '[:upper:]' '[:lower:]' \
+        # Extract short branch identifier
+        SOURCE_BRANCH=$(echo "$BUILD_SOURCEBRANCH" | sed -E 's|^refs/pull/[0-9]+/||')
+        BRANCH_ID=$(echo "$SOURCE_BRANCH" | tr '[:upper:]' '[:lower:]' \
           | tr -c '[:alnum:]' '-' | sed -E 's/-+/-/g; s/^-|-$//g' | cut -c1-8)
 
-        # ---- NEW: Determine PR iteration using GitHub API ----
-        PR="${SYSTEM_PULLREQUEST_PULLREQUESTID}"
-
-        echo "Fetching PR commit count from GitHub for $OWNER/$REPO PR #$PR..."
+        # --- Fetch commit count from GitHub ---
         PR_COMMITS=$(curl -s \
           -H "Authorization: Bearer ${GITHUB_TOKEN}" \
           -H "Accept: application/vnd.github+json" \
-          "https://api.github.com/repos/$OWNER/$REPO/pulls/$PR" \
+          "https://api.github.com/repos/$OWNER/$REPO/pulls/$PR_NUMBER" \
           | jq -r '.commits')
 
         if [[ -z "$PR_COMMITS" || "$PR_COMMITS" == "null" ]]; then
@@ -98,7 +94,7 @@ steps:
 
         ITERATION=$(printf "%03d" "$PR_COMMITS")
 
-        VERSION="$BASE_VERSION-pr-$PR_BRANCH_ID-$ITERATION"
+        VERSION="$BASE_VERSION-pr-$BRANCH_ID-$ITERATION"
       else
         # Use branch name as prerelease id for non-PR builds
         # Get the part after the last slash, or the whole branch name if no slash
