@@ -80,7 +80,7 @@ steps:
 - task: GetGitHubToken@1
   displayName: "Get GitHub Token"
   inputs:
-    gitHubConnection: 'marc-mueller'
+    gitHubConnection: '${{ parameters.githubServiceConnection }}'
     variableName: 'GitHubToken'
 
 - bash: |
