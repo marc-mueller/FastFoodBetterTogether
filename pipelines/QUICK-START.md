@@ -5,46 +5,69 @@
 - [ ] Repository moved to GitHub
 - [ ] Azure DevOps project configured
 - [ ] Azure Pipelines GitHub App installed on repository
-- [ ] GitHub Personal Access Token created
+- [ ] GitHub Service Connection created in Azure DevOps
 
-## 1. Create GitHub Personal Access Token
+## 1. Configure GitHub Service Connection
 
-1. Go to GitHub Settings → Developer settings → Personal access tokens → Tokens (classic)
-2. Click "Generate new token (classic)"
-3. Select scopes:
-   - ✅ `repo` (Full control of private repositories)
-   - ✅ `repo:status` (Access commit status)
-4. Copy the token (you won't see it again!)
+The GitHub service connection should already be configured in Azure DevOps. The connection ID is stored in `pipelines/config/var-commonvariables.yml`:
 
-## 2. Configure Token in Azure DevOps
+```yaml
+githubServiceConnection: '2ab8bde8-f905-48c7-8c36-e42bf1641ce4'
+```
 
-1. Go to your Azure DevOps project
-2. Navigate to Pipelines → Library
-3. Create a new variable group or update existing one
-4. Add a secret variable named `GitHubToken`
-5. Paste your GitHub PAT as the value
-6. Make this variable available to all pipelines or link it to specific ones
+If you need to create a new one:
+1. Go to Project Settings → Service connections in Azure DevOps
+2. Click "New service connection" → GitHub
+3. Authenticate with GitHub
+4. Name the connection and copy its ID
+5. Update the ID in `var-commonvariables.yml`
+
+## 2. Install GetGitHubToken Extension
+
+This custom extension retrieves GitHub tokens from the service connection, eliminating the need for manual PAT management.
+
+### Build the Extension
+
+```bash
+cd azure-devops-extension/GetGitHubTokenTask
+npm install
+npm run build
+cd ..
+tfx extension create --manifest-globs vss-extension.json
+```
+
+This creates a `.vsix` file.
+
+### Install in Azure DevOps
+
+1. Go to Organization Settings → Extensions → Upload extension
+2. Upload the `.vsix` file
+3. Install the extension in your organization
+
+**Note**: The extension is required for GitHub status reporting and branch protection configuration.
 
 ## 3. Run Pipeline Setup
 
 1. Navigate to Pipelines in Azure DevOps
 2. Run the `setup-pipelines` pipeline (or create it first from `pipelines/setup-pipelines.yml`)
-3. Set parameters:
-   - `repositoryType`: `github`
-   - `repoName`: `marc-mueller/FastFoodBetterTogether` (or your GitHub repo path)
-   - `branchName`: `refs/heads/main`
+3. The pipeline will use the GitHub service connection from common variables
+4. All pipelines will be created automatically
 
-This will create/update all CI/CD pipelines to use the GitHub repository.
+The setup now uses:
+- `repositoryType`: `github` (default)
+- `githubServiceConnection`: From common variables
+- `--service-connection` flag for pipeline creation
 
 ## 4. Configure GitHub Branch Protection
 
-### Option A: Using Azure Pipeline (Recommended)
+### Using Azure Pipeline (Recommended)
 
 1. Run the `setup-github-branchprotection` pipeline
-2. Verify the settings were applied:
+2. The pipeline uses the GetGitHubToken extension to authenticate
+3. Verify the settings were applied:
    - Visit: `https://github.com/marc-mueller/FastFoodBetterTogether/settings/branches`
 
-### Option B: Manual Configuration
+### Manual Configuration (Alternative)
 
 1. Go to: `https://github.com/marc-mueller/FastFoodBetterTogether/settings/branches`
 2. Click "Add rule" for `main` branch
@@ -84,11 +107,15 @@ This will create/update all CI/CD pipelines to use the GitHub repository.
 4. Verify:
    - ✅ CI pipelines trigger automatically
    - ✅ `pr-initialize` pipeline runs
+   - ✅ `pr-workitemcheck` pipeline runs
    - ✅ Status checks appear in GitHub PR
    - ✅ Checks are required before merge
    - ✅ PR deployment environments are created
 
-5. After verification, you can close the test PR
+5. Close the PR and verify:
+   - ✅ `pr-cleanup` pipeline runs automatically
+
+6. After verification, you can delete the test branch
 
 ## 6. Configure Individual Pipelines (if needed)
 
@@ -103,25 +130,47 @@ If pipelines don't exist yet in Azure DevOps:
 
 Repeat for each pipeline, or use the `setup-pipelines.yml` automation.
 
-## 7. Handle Webhook-Based Pipelines
+## Key Differences from PAT Approach
 
-The following pipelines used Azure Repos webhooks and need alternative triggering:
+### ❌ OLD Approach (Manual PAT)
+```
+1. Create GitHub PAT manually with specific scopes
+2. Store PAT in Azure DevOps as secret variable
+3. Reference $(GitHubToken) in scripts
+4. Remember to rotate PAT periodically
+5. Manage PAT security and permissions
+```
 
-### `pr-cleanup.yml`
-**Purpose:** Clean up PR environments when PRs are closed
+### ✅ NEW Approach (Service Connection + Extension)
+```
+1. GitHub service connection configured once
+2. GetGitHubToken extension installed
+3. Extension retrieves token automatically
+4. Token is short-lived from service connection
+5. No manual token management
+```
 
-**Options:**
-- **Manual:** Run manually when closing PRs
-- **Scheduled:** Run on schedule to check for closed PRs
-- **GitHub Actions:** Create a GitHub Action to trigger this via API when PRs close
+### Usage Comparison
 
-### `pr-workitemcheck.yml`
-**Purpose:** Validate work items have descriptions
+**OLD:**
+```yaml
+- bash: |
+    curl -H "Authorization: token $(ManuallyCreatedPAT)" ...
+  env:
+    GITHUB_TOKEN: $(ManuallyCreatedPAT)  # Manual secret
+```
 
-**Options:**
-- **Manual:** Run manually or as part of PR process
-- **Scheduled:** Run daily to check all active PRs
-- **GitHub Actions:** Create a GitHub Action to trigger this via API on PR updates
+**NEW:**
+```yaml
+- task: GetGitHubToken@1
+  inputs:
+    gitHubConnection: '$(githubServiceConnection)'
+
+- bash: |
+    curl -H "Authorization: token $(GitHubToken)" ...
+  env:
+    GITHUB_TOKEN: $(GitHubToken)  # Auto-retrieved
+```
 
 ## Validation
 
@@ -145,10 +194,17 @@ Expected output: "All critical checks passed!"
 ### Issue: Status checks don't appear in GitHub
 
 **Check:**
-1. `GitHubToken` variable is configured with correct token
-2. Token has `repo:status` scope
+1. GetGitHubToken extension is installed
+2. GitHub service connection is configured
 3. Pipelines use `step-setuniversalstatus.yml`
 4. Repository owner/name are correct (`marc-mueller/FastFoodBetterTogether`)
+
+### Issue: GetGitHubToken task not found
+
+**Solution:**
+1. Build the extension (see Step 2 above)
+2. Upload and install the `.vsix` file in Azure DevOps organization
+3. Ensure the extension is enabled for your project
 
 ### Issue: Branch protection not enforced
 
@@ -162,12 +218,13 @@ Expected output: "All critical checks passed!"
 
 1. ✅ Monitor first few PRs to ensure everything works
 2. ✅ Update team documentation about the new workflow
-3. ✅ Consider implementing GitHub Actions for webhook-based pipelines
+3. ✅ Verify PR cleanup works when closing PRs
 4. ✅ Review and adjust branch protection rules as needed
 
 ## Support
 
 For detailed information, see:
 - `pipelines/GITHUB-MIGRATION.md` - Complete migration guide
+- `azure-devops-extension/README.md` - Extension documentation
 - [Azure Pipelines GitHub Integration](https://learn.microsoft.com/en-us/azure/devops/pipelines/repos/github)
 - [GitHub Branch Protection](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-protected-branches/about-protected-branches)

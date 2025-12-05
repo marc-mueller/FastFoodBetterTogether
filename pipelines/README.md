@@ -18,22 +18,23 @@ Start here based on your needs:
 
 ## 🚀 Quick Start (TL;DR)
 
-1. **Create GitHub Token**
-   - Go to GitHub Settings → Developer settings → Personal access tokens
-   - Create token with `repo` and `repo:status` scopes
+1. **Install GetGitHubToken Extension**
+   - Build extension from `azure-devops-extension/`
+   - Upload `.vsix` to Azure DevOps organization
    
-2. **Configure in Azure DevOps**
-   - Add token as secret variable `GitHubToken` in Azure DevOps
+2. **GitHub Service Connection**
+   - Already configured (ID in `config/var-commonvariables.yml`)
 
 3. **Run Setup Pipelines**
    ```
-   1. Run: setup-pipelines.yml (with repositoryType=github)
+   1. Run: setup-pipelines.yml (uses service connection automatically)
    2. Run: setup-github-branchprotection.yml
    ```
 
 4. **Test**
    - Create a PR in GitHub
    - Verify pipelines trigger and status checks appear
+   - Close PR to verify cleanup runs
 
 ## 📁 File Structure
 
@@ -61,8 +62,8 @@ Trigger when CI builds complete:
 Run on pull requests:
 - `pr-initialize.yml` - Set up PR environment
 - `pr-securityscan.yml` - Security scanning
-- `pr-cleanup.yml` - Clean up PR resources (manual trigger)
-- `pr-workitemcheck.yml` - Validate work items (manual trigger)
+- `pr-cleanup.yml` - Clean up PR resources (triggers on PR close)
+- `pr-workitemcheck.yml` - Validate work items (triggers on PR updates)
 
 ### Setup Pipelines
 One-time or occasional setup:
@@ -73,9 +74,12 @@ One-time or occasional setup:
 ### Supporting Files
 
 **Templates:**
-- `pullrequest/step-setgithubstatus.yml` - Post status to GitHub
+- `pullrequest/step-setgithubstatus.yml` - Post status to GitHub (uses GetGitHubToken extension)
 - `pullrequest/step-setprstatus.yml` - Post status to Azure Repos
 - `pullrequest/step-setuniversalstatus.yml` - Auto-detect and post status
+
+**Extension:**
+- `../azure-devops-extension/` - Custom GetGitHubToken task for retrieving tokens from service connections
 
 **Validation:**
 - `validate-github-migration.sh` - Validate migration is correct
