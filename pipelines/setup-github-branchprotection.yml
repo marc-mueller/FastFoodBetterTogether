@@ -68,7 +68,7 @@ parameters:
 
 - name: githubServiceConnection
   type: string
-  default: '$(githubServiceConnection)'
+  default: 'marc-mueller'
 
 pool:
   vmImage: ubuntu-latest
