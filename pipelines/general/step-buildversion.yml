@@ -69,18 +69,15 @@ steps:
         PR_NUMBER="${BASH_REMATCH[1]}"
         echo "GitHub PR detected: PR #$PR_NUMBER"
 
-        # extract OWNER / REPO
-        FULL_REPO="${BUILD_REPOSITORY_NAME}"   # e.g. "marc-mueller/FastFoodBetterTogether"
+        FULL_REPO="${BUILD_REPOSITORY_NAME}"
         OWNER="${FULL_REPO%%/*}"
         REPO="${FULL_REPO##*/}"
         echo "Repository detected as owner=$OWNER repo=$REPO"
 
-        # Extract short branch identifier
-        SOURCE_BRANCH=$(echo "$BUILD_SOURCEBRANCH" | sed -E 's|^refs/pull/[0-9]+/||')
-        BRANCH_ID=$(echo "$SOURCE_BRANCH" | tr '[:upper:]' '[:lower:]' \
-          | tr -c '[:alnum:]' '-' | sed -E 's/-+/-/g; s/^-|-$//g' | cut -c1-8)
+        # Short prerelease ID based on PR number
+        BRANCH_ID="pr-${PR_NUMBER}"
 
-        # --- Fetch commit count from GitHub ---
+        # Get commit count
         PR_COMMITS=$(curl -s \
           -H "Authorization: Bearer ${GITHUB_TOKEN}" \
           -H "Accept: application/vnd.github+json" \
@@ -94,7 +91,12 @@ steps:
 
         ITERATION=$(printf "%03d" "$PR_COMMITS")
 
-        VERSION="$BASE_VERSION-pr-$BRANCH_ID-$ITERATION"
+        VERSION="$BASE_VERSION-$BRANCH_ID-$ITERATION"
+
+        # Define AzurePipelines-style PR variables for GitHub
+        echo "##vso[task.setvariable variable=System.PullRequest.PullRequestId]$PR_NUMBER"
+        echo "##vso[task.setvariable variable=System.PullRequest.PullRequestIteration]$ITERATION"
+
       else
         # Use branch name as prerelease id for non-PR builds
         # Get the part after the last slash, or the whole branch name if no slash
