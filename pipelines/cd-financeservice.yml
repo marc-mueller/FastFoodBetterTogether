@@ -29,8 +29,6 @@ variables:
   - template: config/var-commonvariables-release.yml
   - template: config/var-financeservice.yml
   - group: fastfood-releasesecrets
-  - name: prId
-    value: ${{ split(resources.pipeline.ciBuild.runName, '-')[2] }}
 
 stages:
   - stage: Staging
@@ -146,8 +144,10 @@ stages:
 
   - stage: PullRequest
     dependsOn: []
-    condition: and(succeeded(), ne(variables['prId'], ''))
+    condition: and(succeeded(), startsWith(variables['resources.pipeline.ciBuild.sourceBranch'], 'refs/pull/'))
     variables:
+      - name: prId
+        value: $[replace(replace(replace(variables['resources.pipeline.ciBuild.sourceBranch'],'refs/pull/',''),'/merge',''),'/head','')]
       - name: stagename
         value: pr
       - name: namespace
