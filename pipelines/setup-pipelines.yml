@@ -76,6 +76,10 @@ parameters:
   displayName: 'Branch name (where to create pipelines in)'
   type: string
   default: '$(Build.SourceBranch)'
+- name: githubServiceConnection
+  displayName: 'GitHub Service Connection'
+  type: string
+  default: 'marc-mueller'
 
 variables:
   repoName:    '${{ parameters.repoName }}'
@@ -100,6 +104,7 @@ steps:
         --repository-type tfsgit `
         --repository $(repoName) `
         --branch $(branchName) `
+        --service-connection "${{ parameters.githubServiceConnection }}" `
         --yaml-path ${{ pipeline.yaml }}
     displayName: '${{ pipeline.name }}: az pipelines create'
     continueOnError: true
