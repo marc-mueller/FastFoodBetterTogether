@@ -83,8 +83,10 @@ stages:
 
   - stage: PullRequest
     dependsOn: []
-    condition: and(succeeded(), ne(variables['System.PullRequest.PullRequestId'], ''))
+    condition: and(succeeded(), startsWith(variables['resources.pipeline.ciBuild.sourceBranch'], 'refs/pull/'))
     variables:
+      - name: prId
+        value: $[replace(replace(replace(variables['resources.pipeline.ciBuild.sourceBranch'],'refs/pull/',''),'/merge',''),'/head','')]
       - name: stagename
         value: pr
       - name: namespace
