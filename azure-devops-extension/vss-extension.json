@@ -2,7 +2,7 @@
   "manifestVersion": 1,
   "id": "fastfood-github-token-extension",
   "name": "FastFood GitHub Token Extension",
-  "version": "0.1.5",
+  "version": "0.1.6",
   "publisher": "4tecture",
   "targets": [
     {
