@@ -20,7 +20,7 @@ variables:
 - name: nodeVersion
   value: '22'
 - name: githubServiceConnection
-  value: '2ab8bde8-f905-48c7-8c36-e42bf1641ce4'
+  value: 'marc-mueller'
 
 - name: dockerFilePath
   value: 'src/services/$(folderNameComponent)/$(folderNameService)/Dockerfile'

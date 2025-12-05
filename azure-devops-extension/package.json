@@ -4,12 +4,10 @@
   "description": "Azure DevOps task to get GitHub token from service connection",
   "main": "main.js",
   "scripts": {
-    "build": "tsc",
+    "build": "cd GetGitHubTokenTask && npm run build && cd ..",
     "package": "tfx extension create --manifest-globs vss-extension.json"
   },
   "dependencies": {
-    "azure-pipelines-task-lib": "^4.0.0",
-    "typed-rest-client": "^1.8.11"
   },
   "devDependencies": {
     "@types/node": "^20.0.0",

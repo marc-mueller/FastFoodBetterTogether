@@ -340,3 +340,8 @@ trivy_*.json
 **/certs/*.pem
 
 .playwright-mcp/
+
+*.vsix
+
+azure-devops-extension/GetGitHubTokenTask/main.js
+azure-devops-extension/**/package-lock.json
