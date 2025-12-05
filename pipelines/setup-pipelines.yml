@@ -83,6 +83,10 @@ parameters:
   displayName: 'Repository type (github or tfsgit)'
   type: string
   default: 'github'
+- name: githubServiceConnection
+  displayName: 'GitHub Service Connection'
+  type: string
+  default: 'marc-mueller'
 
 variables:
   repoName:    '${{ parameters.repoName }}'
@@ -108,6 +112,7 @@ steps:
         --repository-type $(repositoryType) `
         --repository $(repoName) `
         --branch $(branchName) `
+        --service-connection "${{ parameters.githubServiceConnection }}" `
         --yaml-path ${{ pipeline.yaml }}
     displayName: '${{ pipeline.name }}: az pipelines create'
     continueOnError: true
