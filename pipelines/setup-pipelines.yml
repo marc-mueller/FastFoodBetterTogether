@@ -86,7 +86,7 @@ parameters:
 - name: githubServiceConnection
   displayName: 'GitHub Service Connection'
   type: string
-  default: 'marc-mueller'
+  default: '2ab8bde8-f905-48c7-8c36-e42bf1641ce4'
 
 variables:
   repoName:    '${{ parameters.repoName }}'
@@ -113,6 +113,7 @@ steps:
         --repository $(repoName) `
         --branch $(branchName) `
         --service-connection "${{ parameters.githubServiceConnection }}" `
+        --skip-first-run true `
         --yaml-path ${{ pipeline.yaml }}
     displayName: '${{ pipeline.name }}: az pipelines create'
     continueOnError: true
