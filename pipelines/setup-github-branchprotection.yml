@@ -66,11 +66,22 @@ parameters:
     # Work item check
     - context: 'fastfood-wi-content-check'
 
+- name: githubServiceConnection
+  type: string
+  default: '$(githubServiceConnection)'
+
 pool:
   vmImage: ubuntu-latest
 
 steps:
 - checkout: none
+
+# Get GitHub token from service connection
+- task: GetGitHubToken@1
+  displayName: "Get GitHub Token"
+  inputs:
+    gitHubConnection: '${{ parameters.githubServiceConnection }}'
+    variableName: 'GitHubToken'
 
 - bash: |
     set -euo pipefail
@@ -118,10 +129,10 @@ steps:
     echo "$PROTECTION_CONFIG" | jq '.'
     
     # Apply branch protection using GitHub API
-    # The GitHub PAT should be provided via the GITHUB_TOKEN environment variable
+    # The GitHub token is provided via the GetGitHubToken task
     if [ -z "${GITHUB_TOKEN:-}" ]; then
-      echo "ERROR: GITHUB_TOKEN environment variable is not set"
-      echo "Please configure a GitHub Personal Access Token with 'repo' scope as a pipeline secret"
+      echo "WARNING: GITHUB_TOKEN environment variable is not set"
+      echo "The GetGitHubToken task may not have run successfully, or the extension may not be installed."
       exit 1
     fi
     

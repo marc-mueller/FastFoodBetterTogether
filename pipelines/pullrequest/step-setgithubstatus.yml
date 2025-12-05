@@ -22,12 +22,21 @@ parameters:
   - name: githubRepoName
     type: string
     default: 'FastFoodBetterTogether'
+  - name: githubServiceConnection
+    type: string
+    default: '$(githubServiceConnection)'
 
 steps:
+# Get GitHub token from service connection
+- task: GetGitHubToken@1
+  displayName: "Get GitHub Token"
+  inputs:
+    gitHubConnection: '${{ parameters.githubServiceConnection }}'
+    variableName: 'GitHubToken'
+  continueOnError: true
+
 - task: Bash@3
   displayName: "Set GitHub commit status: ${{ parameters.contextName }} → ${{ parameters.state }}"
-  env:
-    GITHUB_TOKEN: $(GitHubToken)
   inputs:
     targetType: 'inline'
     script: |
@@ -68,9 +77,10 @@ steps:
       
       # Check for GitHub token
       if [ -z "${GITHUB_TOKEN:-}" ]; then
-        echo "ERROR: GITHUB_TOKEN environment variable is not set"
-        echo "Please configure a GitHub Personal Access Token with 'repo:status' scope as a pipeline secret variable 'GitHubToken'"
-        exit 1
+        echo "WARNING: GITHUB_TOKEN environment variable is not set"
+        echo "The GetGitHubToken task may not have run successfully, or the extension may not be installed."
+        echo "Skipping GitHub status update."
+        exit 0
       fi
       
       # Build JSON payload
@@ -113,3 +123,5 @@ steps:
         echo "$BODY" | jq '.' || echo "$BODY"
         exit 1
       fi
+  env:
+    GITHUB_TOKEN: $(GitHubToken)

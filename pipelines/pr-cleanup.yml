@@ -1,26 +1,17 @@
 trigger: none
 
-# NOTE: For GitHub repositories, this pipeline should be triggered manually when a PR is closed/abandoned.
-# Azure Repos-specific webhooks are not available for GitHub repositories.
-# Alternative: Use GitHub Actions to call this pipeline via Azure DevOps REST API when PR events occur.
+pr:
+  branches:
+    include:
+      - main
+      - release/*
 
 variables:
   - template: config/var-pool.yml
   - template: config/var-commonvariables.yml
   - template: config/var-commonvariables-release.yml
 
-# Webhook resources are only supported for Azure Repos, not GitHub
-# resources:
-#   webhooks:
-#     - webhook: fastfoodPrUpdated
-#       connection: FastfoodPREventsConnection
-#       filters:
-#       - path: eventType
-#         value: git.pullrequest.updated
-#       - path: publisherId
-#         value: tfs
-#       - path: resource.repository.name
-#         value: FastFood
+resources:
   containers:
     - container: worker
       image: $(azureContainerRegistry)/fastfood-buildenv:$(NetCoreSdkVersion)
@@ -29,7 +20,8 @@ variables:
 jobs:
   - job: prCleanup
     displayName: 'PR Cleanup'
-    condition: or(eq('${{ parameters.fastfoodPrUpdated.resource.status }}', 'completed'), eq('${{ parameters.fastfoodPrUpdated.resource.status }}', 'abandoned'))
+    # Only run when PR is closed or abandoned
+    condition: and(succeeded(), in(variables['Build.Reason'], 'PullRequest'), eq(variables['System.PullRequest.Status'], 'closed'))
     pool:
       ${{ if eq(variables['poolMode'], 'HostedAgent') }}:
         vmImage: ${{ variables['poolVmImage'] }}
@@ -44,4 +36,4 @@ jobs:
         connectionType: 'Kubernetes Service Connection'
         kubernetesServiceEndpoint: $(kubernetesDeploymentServiceConnection)
         command: delete
-        arguments: 'namespace pr-${{ parameters.fastfoodPrUpdated.resource.pullRequestId }}'
+        arguments: 'namespace pr-$(System.PullRequest.PullRequestId)'

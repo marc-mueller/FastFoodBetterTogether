@@ -1,27 +1,17 @@
 trigger: none
 
-# NOTE: For GitHub repositories, this pipeline should be triggered manually or via scheduled runs.
-# Azure Repos-specific webhooks are not available for GitHub repositories.
-# Alternative: Use GitHub Actions to call this pipeline via Azure DevOps REST API when PR events occur,
-# or run this as a scheduled pipeline to check all active PRs.
+pr:
+  branches:
+    include:
+      - main
+      - release/*
 
 variables:
   - template: config/var-pool.yml
   - template: config/var-commonvariables.yml
   - template: config/var-commonvariables-release.yml
 
-# Webhook resources are only supported for Azure Repos, not GitHub
-# resources:
-#   webhooks:
-#     - webhook: fastfoodPrUpdated
-#       connection: FastfoodPREventsConnection
-#       filters:
-#       - path: eventType
-#         value: git.pullrequest.updated
-#       - path: publisherId
-#         value: tfs
-#       - path: resource.repository.name
-#         value: FastFood
+resources:
   containers:
     - container: worker
       image: $(azureContainerRegistry)/fastfood-buildenv:$(NetCoreSdkVersion)
@@ -30,7 +20,7 @@ variables:
 jobs:
   - job: workitemcheck
     displayName: 'Work Item Check'
-    condition: eq('${{ parameters.fastfoodPrUpdated.resource.status }}', 'active')
+    condition: and(succeeded(), eq(variables['Build.Reason'], 'PullRequest'))
     pool:
       ${{ if eq(variables['poolMode'], 'HostedAgent') }}:
         vmImage: ${{ variables['poolVmImage'] }}
@@ -47,9 +37,9 @@ jobs:
         targetType: 'inline'
         script: |
           set -euo pipefail
-          pr_id="${{ parameters.fastfoodPrUpdated.resource.pullRequestId }}"
-          repo_id="${{ parameters.fastfoodPrUpdated.resource.repository.id }}"
-          org_url="${SYSTEM_COLLECTIONURI}"
+          pr_id="$(System.PullRequest.PullRequestId)"
+          repo_id="$(Build.Repository.ID)"
+          org_url="$(System.TeamFoundationCollectionUri)"
 
           # Get work item IDs associated with the PR
           work_item_ids=$(az repos pr work-item list --id "$pr_id" --org "$org_url" --output tsv --query "[].id")
@@ -76,7 +66,6 @@ jobs:
 
     - template: pullrequest/step-setuniversalstatus.yml
       parameters:
-        pullRequestId: ${{ parameters.fastfoodPrUpdated.resource.pullRequestId }}
         contextName: 'fastfood-wi-content-check'
         genre: 'wi'
         state: $(prState)

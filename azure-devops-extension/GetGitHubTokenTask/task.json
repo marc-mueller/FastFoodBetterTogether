@@ -1,0 +1,39 @@
+{
+  "$schema": "https://raw.githubusercontent.com/Microsoft/azure-pipelines-task-lib/master/tasks.schema.json",
+  "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+  "name": "GetGitHubToken",
+  "friendlyName": "Get GitHub Token from Service Connection",
+  "description": "Retrieves a short-lived GitHub token from an Azure DevOps GitHub service connection and stores it as a secret variable",
+  "helpMarkDown": "This task gets a GitHub token from the specified service connection and makes it available as a secret pipeline variable",
+  "category": "Utility",
+  "author": "FastFood",
+  "version": {
+    "Major": 1,
+    "Minor": 0,
+    "Patch": 0
+  },
+  "instanceNameFormat": "Get GitHub Token",
+  "inputs": [
+    {
+      "name": "gitHubConnection",
+      "type": "connectedService:github",
+      "label": "GitHub Service Connection",
+      "defaultValue": "",
+      "required": true,
+      "helpMarkDown": "Select the GitHub service connection to use for authentication"
+    },
+    {
+      "name": "variableName",
+      "type": "string",
+      "label": "Output Variable Name",
+      "defaultValue": "GitHubToken",
+      "required": true,
+      "helpMarkDown": "The name of the pipeline variable to store the token in. The variable will be set as a secret variable."
+    }
+  ],
+  "execution": {
+    "Node20_1": {
+      "target": "main.js"
+    }
+  }
+}
