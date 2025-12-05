@@ -21,6 +21,12 @@ steps:
         npm install -g monotag
       displayName: 'Install monotag'
 
+  - task: GetGitHubToken@1
+    displayName: "Get GitHub Token"
+    inputs:
+      gitHubConnection: '${{ parameters.githubServiceConnection }}'
+      variableName: 'GitHubToken'
+
   - bash: |
       set -euo pipefail
       # Compose path args for monotag
@@ -59,18 +65,35 @@ steps:
         COUNTER=$(printf "%03d" $((PR_COUNT - 1)))
       fi
       # Check if we're in a PR build
-      if [[ -n "$(System.PullRequest.PullRequestId)" ]]; then
-        echo "Pull Request build detected: PR #$(System.PullRequest.PullRequestId), Iteration $(System.PullRequest.PullRequestIteration)"
-        
-        # Extract branch name from source branch ref
-        SOURCE_BRANCH=$(echo "$(System.PullRequest.SourceBranch)" | sed -E 's|^refs/heads/||')
-        # Get the part after the last slash, or the whole branch name if no slash
+      if [[ -n "${SYSTEM_PULLREQUEST_PULLREQUESTID:-}" ]]; then
+        echo "Pull Request build detected: PR #${SYSTEM_PULLREQUEST_PULLREQUESTID}"
+
+        # Extract branch name
+        SOURCE_BRANCH=$(echo "${SYSTEM_PULLREQUEST_SOURCEBRANCH}" | sed -E 's|^refs/heads/||')
         BRANCH_SUFFIX=$(echo "$SOURCE_BRANCH" | sed -E 's|.*/||')
-        # Process the branch suffix to get a clean, meaningful identifier (max 8 chars)
-        PR_BRANCH_ID=$(echo "$BRANCH_SUFFIX" | tr '[:upper:]' '[:lower:]' | tr -c '[:alnum:]' '-' | sed -E 's/-+/-/g; s/^-|-$//g' | cut -c1-8)
-        
-        # Create PR-specific version with iteration number
-        VERSION="$BASE_VERSION-pr-$PR_BRANCH_ID-$(System.PullRequest.PullRequestIteration)"
+        PR_BRANCH_ID=$(echo "$BRANCH_SUFFIX" | tr '[:upper:]' '[:lower:]' \
+          | tr -c '[:alnum:]' '-' | sed -E 's/-+/-/g; s/^-|-$//g' | cut -c1-8)
+
+        # Get PR commit count from GitHub to simulate "iteration"
+        OWNER="${{ parameters.githubRepoOwner }}"
+        REPO="${{ parameters.githubRepoName }}"
+        PR="${SYSTEM_PULLREQUEST_PULLREQUESTID}"
+
+        echo "Fetching PR commit count from GitHub..."
+        PR_COMMITS=$(curl -s \
+          -H "Authorization: Bearer ${GITHUB_TOKEN}" \
+          -H "Accept: application/vnd.github+json" \
+          "https://api.github.com/repos/$OWNER/$REPO/pulls/$PR" \
+          | jq -r '.commits')
+
+        if [[ -z "$PR_COMMITS" || "$PR_COMMITS" == "null" ]]; then
+            echo "Could not retrieve PR commit count, fallback to 1"
+            PR_COMMITS=1
+        fi
+
+        ITERATION=$(printf "%03d" "$PR_COMMITS")
+
+        VERSION="$BASE_VERSION-pr-$PR_BRANCH_ID-$ITERATION"
       else
         # Use branch name as prerelease id for non-PR builds
         # Get the part after the last slash, or the whole branch name if no slash
@@ -93,3 +116,5 @@ steps:
       fi
     displayName: 'Calculate service version'
     name: ${{ parameters.versionTaskName }}
+    env:
+      GITHUB_TOKEN: $(GitHubToken)
