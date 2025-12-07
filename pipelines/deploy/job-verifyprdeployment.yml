@@ -53,9 +53,10 @@ jobs:
           ${{ if ne(parameters.testFilter, '') }}:
             testFilter: '${{ parameters.testFilter }}'
 
-      - template: ../pullrequest/step-setuniversalstatus.yml
+      - template: step-setgithubstatus.yml
         parameters:
-          state: 'succeeded'
-          description: '${{ parameters.serviceName }} PR Deployment Verified'
+          commitSha: '$(Build.SourceVersion)'
+          state: ${{ eq(variables['Agent.JobStatus'], 'Succeeded') && 'success' || 'failure' }}
           contextName: 'pr-deployment-${{ parameters.serviceName }}'
-          genre: 'pr-env'
+          description: '${{ parameters.serviceName }} PR Deployment Verified'
+      

@@ -10,18 +10,13 @@ parameters:
     type: string
   - name: state
     type: string
+    default: 'pending'
     # GitHub states: pending, success, error, failure
   - name: description
     type: string
   - name: targetUrl
     type: string
     default: ''
-  - name: githubRepoOwner
-    type: string
-    default: 'marc-mueller'
-  - name: githubRepoName
-    type: string
-    default: 'FastFoodBetterTogether'
   - name: githubServiceConnection
     type: string
     default: '$(githubServiceConnection)'
@@ -42,8 +37,16 @@ steps:
     script: |
       set -euo pipefail
 
-      OWNER="${{ parameters.githubRepoOwner }}"
-      REPO="${{ parameters.githubRepoName }}"
+      # Derive owner + repo from BUILD_REPOSITORY_NAME (e.g. "owner/repo")
+      FULL_REPO="${BUILD_REPOSITORY_NAME:-}"
+      if [ -z "$FULL_REPO" ]; then
+        echo "ERROR: BUILD_REPOSITORY_NAME is not set. Cannot determine GitHub repo."
+        exit 1
+      fi
+
+      OWNER="${FULL_REPO%%/*}"
+      REPO="${FULL_REPO##*/}"
+
       SHA="${{ parameters.commitSha }}"
       CONTEXT="${{ parameters.contextName }}"
       STATE="${{ parameters.state }}"
