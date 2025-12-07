@@ -53,7 +53,7 @@ jobs:
           ${{ if ne(parameters.testFilter, '') }}:
             testFilter: '${{ parameters.testFilter }}'
 
-      - template: step-setgithubstatus.yml
+      - template: ../pullrequest/step-setgithubstatus.yml
         parameters:
           commitSha: '$(Build.SourceVersion)'
           state: $(Agent.JobStatus)
