@@ -52,7 +52,11 @@ steps:
       STATE="${{ parameters.state }}"
       DESCRIPTION="${{ parameters.description }}"
       
-      # Map Azure DevOps states to GitHub states if necessary
+      # Normalize to lowercase for easier mapping
+      STATE="${STATE,,}"
+
+      # Map Azure DevOps job states to GitHub states
+      # Azure values (lowercased): canceled, failed, succeeded, succeededwithissues, skipped
       case "$STATE" in
         succeeded|success)
           GITHUB_STATE="success"

@@ -56,7 +56,7 @@ jobs:
       - template: step-setgithubstatus.yml
         parameters:
           commitSha: '$(Build.SourceVersion)'
-          state: ${{ eq(variables['Agent.JobStatus'], 'Succeeded') && 'success' || 'failure' }}
+          state: $(Agent.JobStatus)
           contextName: 'pr-deployment-${{ parameters.serviceName }}'
           description: '${{ parameters.serviceName }} PR Deployment Verified'
       
