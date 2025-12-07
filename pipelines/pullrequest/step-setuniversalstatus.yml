@@ -17,7 +17,7 @@ parameters:
   # Azure Repos specific
   - name: pullRequestId
     type: string
-    default: '$(System.PullRequest.PullRequestId)'
+    default: '$(System.PullRequest.PullRequestNumber)'
   - name: genre
     type: string
     default: ''

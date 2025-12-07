@@ -1,0 +1,10 @@
+steps:
+  - bash: |
+      echo "==========================================="
+      echo "           ENVIRONMENT VARIABLES"
+      echo "=========================================== "
+      printenv | sort
+      echo "==========================================="
+      echo "           END ENV VAR DUMP"
+      echo "==========================================="
+    displayName: "Dump all environment variables"

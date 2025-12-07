@@ -36,4 +36,4 @@ jobs:
         connectionType: 'Kubernetes Service Connection'
         kubernetesServiceEndpoint: $(kubernetesDeploymentServiceConnection)
         command: delete
-        arguments: 'namespace pr-$(System.PullRequest.PullRequestId)'
+        arguments: 'namespace pr-$(System.PullRequest.PullRequestNumber)'

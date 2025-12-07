@@ -113,7 +113,7 @@ All existing Azure DevOps variables continue to work:
 - `System.TeamFoundationCollectionUri`
 - `System.TeamProject`
 - `Build.Repository.Name`
-- `System.PullRequest.PullRequestId`
+- `System.PullRequest.PullRequestNumber`
 - Etc.
 
 ### New Variables Available

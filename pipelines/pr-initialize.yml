@@ -61,7 +61,7 @@ stages:
         - name: stagename
           value: pr
         - name: namespace
-          value: $(stagename)-$(System.PullRequest.PullRequestId)
+          value: $(stagename)-$(System.PullRequest.PullRequestNumber)
         - name: redisDB
           value: $[counter(format('{0:yyyyMM}', pipeline.startTime), 3)]
         strategy:
@@ -192,7 +192,7 @@ stages:
                     ResourceGroup: '$(azureResourceGroup)'
                     ElasticPoolName: '$(sqlElasticPoolName)'
                     AzureSqlName: '$(sqlServerName)'
-                    DbName: 'FastFoodFinance-pr$(System.PullRequest.PullRequestId)'
+                    DbName: 'FastFoodFinance-pr$(System.PullRequest.PullRequestNumber)'
                     ManagedIdentity: 'financeservice-$(namespace)-smi'
                     DeploymentManagedidentity: 'financeservice-$(namespace)-dmi'
                     SetupBackup: false

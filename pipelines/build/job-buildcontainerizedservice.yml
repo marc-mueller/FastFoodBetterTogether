@@ -66,6 +66,7 @@ jobs:
         persistCredentials: true
         clean: true
         lfs: true
+      - template: ../general/step-dumpenvvar.yml
       - template: ../general/step-buildversion.yml
         parameters:
           installMonotag: ${{ parameters.installMonotag }}

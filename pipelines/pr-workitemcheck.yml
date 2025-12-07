@@ -37,7 +37,7 @@ jobs:
         targetType: 'inline'
         script: |
           set -euo pipefail
-          pr_id="$(System.PullRequest.PullRequestId)"
+          pr_id="$(System.PullRequest.PullRequestNumber)"
           repo_id="$(Build.Repository.ID)"
           org_url="$(System.TeamFoundationCollectionUri)"
 

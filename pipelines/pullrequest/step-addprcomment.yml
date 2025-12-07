@@ -14,10 +14,10 @@ steps:
 #     status: 'Active'
 #     type: 'system'
 #     skipIfCommentExists: ${{ parameters.skipIfExists }}
-#     pullRequestId: $(System.PullRequest.PullRequestId)
+#     pullRequestId: $(System.PullRequest.PullRequestNumber)
 #     useDefined: true
 #     commentId: ${{ parameters.commentMarker }}
-#   condition: and(succeeded(), ne('$(System.PullRequest.PullRequestId)', ''))
+#   condition: and(succeeded(), ne('$(System.PullRequest.PullRequestNumber)', ''))
 - task: Bash@3
   displayName: 'Post PR comment (skipIfExists=${{ parameters.skipIfExists }})'
   env:

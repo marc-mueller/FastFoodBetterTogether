@@ -11,7 +11,7 @@
 parameters:
   - name: pullRequestId
     type: string
-    default: '$(System.PullRequest.PullRequestId)'
+    default: '$(System.PullRequest.PullRequestNumber)'
   - name: contextName
     type: string
   - name: state

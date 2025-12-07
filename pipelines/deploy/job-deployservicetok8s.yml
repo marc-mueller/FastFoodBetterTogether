@@ -51,6 +51,7 @@ jobs:
         deploy:
           steps:
             - checkout: none
+            - template: ../general/step-dumpenvvar.yml
             - ${{ if eq(parameters.updateBuildNumber, true) }}:
                 - script: |
                     echo "##vso[build.updatebuildnumber]$(releaseBuildNumber)"

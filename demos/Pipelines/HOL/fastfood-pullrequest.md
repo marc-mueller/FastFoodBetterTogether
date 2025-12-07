@@ -32,12 +32,12 @@ stages:
     # ...
   - stage: PullRequest
     dependsOn: []
-    condition: and(succeeded(), ne(variables['System.PullRequest.PullRequestId'], ''))
+    condition: and(succeeded(), ne(variables['System.PullRequest.PullRequestNumber'], ''))
     # ...
 ```
 **Explanation:**
 - **Staging** and **Production** only run for the `main` branch, and Production only runs if Staging succeeds.
-- **PullRequest** runs only for PR builds (when `System.PullRequest.PullRequestId` is set) and is independent of the other stages.
+- **PullRequest** runs only for PR builds (when `System.PullRequest.PullRequestNumber` is set) and is independent of the other stages.
 
 ---
 
@@ -49,12 +49,12 @@ In the PullRequest stage, a unique namespace is created for each PR (e.g., `pr-1
 ```yaml
 - stage: PullRequest
   dependsOn: []
-  condition: and(succeeded(), ne(variables['System.PullRequest.PullRequestId'], ''))
+  condition: and(succeeded(), ne(variables['System.PullRequest.PullRequestNumber'], ''))
   variables:
     - name: stagename
       value: pr
     - name: namespace
-      value: $(stagename)-$(System.PullRequest.PullRequestId)
+      value: $(stagename)-$(System.PullRequest.PullRequestNumber)
     - name: redisDB
       value: $[counter(format('{0:yyyyMM}', pipeline.startTime), 3)]
   jobs:
@@ -73,7 +73,7 @@ In the PullRequest stage, a unique namespace is created for each PR (e.g., `pr-1
     - template: deploy/job-verifyprdeployment.yml
       parameters:
         serviceName: '$(serviceName)'
-        displayName: 'Run System Tests for PR $(System.PullRequest.PullRequestId)'
+        displayName: 'Run System Tests for PR $(System.PullRequest.PullRequestNumber)'
         pool:
           vmImage: 'ubuntu-latest'
 ```

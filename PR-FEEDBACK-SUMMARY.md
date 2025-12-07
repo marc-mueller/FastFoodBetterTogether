@@ -27,7 +27,7 @@ jobs:
 
 - Triggers on all PR events
 - Job only executes when PR status is 'closed'
-- Automatically cleans up namespace: `pr-$(System.PullRequest.PullRequestId)`
+- Automatically cleans up namespace: `pr-$(System.PullRequest.PullRequestNumber)`
 
 #### pr-workitemcheck.yml
 ```yaml

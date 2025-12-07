@@ -86,12 +86,10 @@ stages:
     dependsOn: []
     condition: and(succeeded(), startsWith(variables['resources.pipeline.ciBuild.sourceBranch'], 'refs/pull/'))
     variables:
-      - name: prId
-        value: $[replace(replace(replace(variables['resources.pipeline.ciBuild.sourceBranch'],'refs/pull/',''),'/merge',''),'/head','')]
       - name: stagename
         value: pr
       - name: namespace
-        value: $(stagename)-$(System.PullRequest.PullRequestId)
+        value: $(stagename)-$(System.PullRequest.PullRequestNumber)
     jobs:
       - template: deploy/job-deployservicetok8s.yml
         parameters:

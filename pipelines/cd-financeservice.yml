@@ -146,16 +146,14 @@ stages:
     dependsOn: []
     condition: and(succeeded(), startsWith(variables['resources.pipeline.ciBuild.sourceBranch'], 'refs/pull/'))
     variables:
-      - name: prId
-        value: $[replace(replace(replace(variables['resources.pipeline.ciBuild.sourceBranch'],'refs/pull/',''),'/merge',''),'/head','')]
       - name: stagename
         value: pr
       - name: namespace
-        value: $(stagename)-$(prId)
+        value: $(stagename)-$(System.PullRequest.PullRequestNumber)
       - name: redisDB
         value: $[counter(format('{0:yyyyMM}', pipeline.startTime), 3)]
       - name: databaseName
-        value: 'FastFoodFinance-pr$(prId)'
+        value: 'FastFoodFinance-pr$(System.PullRequest.PullRequestNumber)'
     jobs:
       - template: deploy/job-deployazureresources.yml
         parameters:
@@ -208,7 +206,7 @@ stages:
         parameters:
           container: worker
           serviceName: '$(serviceName)'
-          displayName: 'Run System Tests for PR $(prId)'
+          displayName: 'Run System Tests for PR'
           posUrl: 'selfservicepos.fastfood.$(namespace).aksdemo.4tecture.ch'
           kitchenUrl: 'kitchenmonitor.fastfood.$(namespace).aksdemo.4tecture.ch'
           orderStatusUrl: 'customerorderstatus.fastfood.$(namespace).aksdemo.4tecture.ch'
