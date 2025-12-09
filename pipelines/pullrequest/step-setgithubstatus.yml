@@ -71,9 +71,11 @@ steps:
           GITHUB_STATE="pending"
           ;;
         *)
-          GITHUB_STATE="$STATE"
+          GITHUB_STATE="failure"
           ;;
       esac
+
+      echo "Mapping Azure DevOps state '$STATE' to GitHub state '$GITHUB_STATE'"
       
       # Choose target URL
       if [ -n "${{ parameters.targetUrl }}" ]; then
