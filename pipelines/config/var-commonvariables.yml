@@ -19,6 +19,8 @@ variables:
   value: 10.0.100
 - name: nodeVersion
   value: '22'
+- name: githubServiceConnection
+  value: 'marc-mueller'
 
 - name: dockerFilePath
   value: 'src/services/$(folderNameComponent)/$(folderNameService)/Dockerfile'

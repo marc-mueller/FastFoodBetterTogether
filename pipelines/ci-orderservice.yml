@@ -9,6 +9,17 @@ trigger:
     include:
       - src/services/order/**
 
+pr:
+  branches:
+    include:
+      - main
+      - release/*
+  paths:
+    include:
+      - src/services/order/**
+      - pipelines/ci-orderservice.yml
+      - pipelines/cd-orderservice.yml
+
 resources:
   containers:
   - container: worker

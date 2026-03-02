@@ -1,0 +1,36 @@
+{
+  "manifestVersion": 1,
+  "id": "fastfood-github-token-extension",
+  "name": "FastFood GitHub Token Extension",
+  "version": "0.1.6",
+  "publisher": "4tecture",
+  "targets": [
+    {
+      "id": "Microsoft.VisualStudio.Services"
+    }
+  ],
+  "description": "Extension to get GitHub tokens from Azure DevOps service connections for use in pipelines",
+  "categories": [
+    "Azure Pipelines"
+  ],
+  "icons": {
+    "default": "images/extension-icon.png"
+  },
+  "files": [
+    {
+      "path": "GetGitHubTokenTask"
+    }
+  ],
+  "contributions": [
+    {
+      "id": "get-github-token-task",
+      "type": "ms.vss-distributed-task.task",
+      "targets": [
+        "ms.vss-distributed-task.tasks"
+      ],
+      "properties": {
+        "name": "GetGitHubTokenTask"
+      }
+    }
+  ]
+}

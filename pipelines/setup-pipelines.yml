@@ -4,6 +4,7 @@
 # Note    : This pipeline uses the OAuth token and requires additional permissions to be able to create new pipelines.
 
 trigger: none
+pr: none
 
 parameters:
 - name: pipelines
@@ -67,6 +68,9 @@ parameters:
     - name: 'pr-workitemcheck'
       yaml: 'pipelines/pr-workitemcheck.yml'
       folder: 'Fastfood'
+    - name: 'setup-github-branchprotection'
+      yaml: 'pipelines/setup-github-branchprotection.yml'
+      folder: 'Fastfood/Setup'
 
 - name: repoName
   displayName: 'Name of git repo (where to create pipelines)'
@@ -76,10 +80,19 @@ parameters:
   displayName: 'Branch name (where to create pipelines in)'
   type: string
   default: '$(Build.SourceBranch)'
+- name: repositoryType
+  displayName: 'Repository type (github or tfsgit)'
+  type: string
+  default: 'github'
+- name: githubServiceConnection
+  displayName: 'GitHub Service Connection'
+  type: string
+  default: '2ab8bde8-f905-48c7-8c36-e42bf1641ce4'
 
 variables:
   repoName:    '${{ parameters.repoName }}'
   branchName:  '${{ parameters.branchName }}'
+  repositoryType: '${{ parameters.repositoryType }}'
 
 steps:
 - checkout: none
@@ -97,9 +110,11 @@ steps:
       az pipelines create `
         --name "${{ pipeline.name }}" `
         --folder-path "${{ pipeline.folder }}" `
-        --repository-type tfsgit `
+        --repository-type $(repositoryType) `
         --repository $(repoName) `
         --branch $(branchName) `
+        --service-connection "${{ parameters.githubServiceConnection }}" `
+        --skip-first-run true `
         --yaml-path ${{ pipeline.yaml }}
     displayName: '${{ pipeline.name }}: az pipelines create'
     continueOnError: true

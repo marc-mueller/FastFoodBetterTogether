@@ -1,5 +1,11 @@
 trigger: none
 
+pr:
+  branches:
+    include:
+      - main
+      - release/*
+
 resources:
   containers:
   - container: worker
@@ -24,7 +30,7 @@ jobs:
     - bash: |
         echo "Perform security scan steps here."
       displayName: 'No Steps for PR Trigger'
-    - template: pullrequest/step-setprstatus.yml
+    - template: pullrequest/step-setuniversalstatus.yml
       parameters:
         state: 'succeeded'
         description: 'PR Security Scan Completed Successfully'

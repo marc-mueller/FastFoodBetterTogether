@@ -1,0 +1,17 @@
+{
+  "name": "get-github-token-task",
+  "version": "1.0.0",
+  "description": "Azure DevOps task to get GitHub token from service connection",
+  "main": "main.js",
+  "scripts": {
+    "build": "cd GetGitHubTokenTask && npm run build && cd ..",
+    "package": "tfx extension create --manifest-globs vss-extension.json"
+  },
+  "dependencies": {
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "typescript": "^5.0.0",
+    "tfx-cli": "^0.22.3"
+  }
+}

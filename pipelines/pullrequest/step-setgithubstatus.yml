@@ -1,0 +1,136 @@
+# File: step-setgithubstatus.yml
+# Purpose: Set GitHub commit status for PRs (replacement for Azure Repos PR status)
+# Docs: https://docs.github.com/en/rest/commits/statuses
+
+parameters:
+  - name: commitSha
+    type: string
+    default: '$(Build.SourceVersion)'
+  - name: contextName
+    type: string
+  - name: state
+    type: string
+    default: 'pending'
+    # GitHub states: pending, success, error, failure
+  - name: description
+    type: string
+  - name: targetUrl
+    type: string
+    default: ''
+  - name: githubServiceConnection
+    type: string
+    default: '$(githubServiceConnection)'
+
+steps:
+# Get GitHub token from service connection
+- task: GetGitHubToken@1
+  displayName: "Get GitHub Token"
+  inputs:
+    gitHubConnection: '${{ parameters.githubServiceConnection }}'
+    variableName: 'GitHubToken'
+  continueOnError: true
+
+- task: Bash@3
+  displayName: "Set GitHub commit status: ${{ parameters.contextName }} → ${{ parameters.state }}"
+  inputs:
+    targetType: 'inline'
+    script: |
+      set -euo pipefail
+
+      # Derive owner + repo from BUILD_REPOSITORY_NAME (e.g. "owner/repo")
+      FULL_REPO="${BUILD_REPOSITORY_NAME:-}"
+      if [ -z "$FULL_REPO" ]; then
+        echo "ERROR: BUILD_REPOSITORY_NAME is not set. Cannot determine GitHub repo."
+        exit 1
+      fi
+
+      OWNER="${FULL_REPO%%/*}"
+      REPO="${FULL_REPO##*/}"
+
+      SHA="${{ parameters.commitSha }}"
+      CONTEXT="${{ parameters.contextName }}"
+      STATE="${{ parameters.state }}"
+      DESCRIPTION="${{ parameters.description }}"
+      
+      # Normalize to lowercase for easier mapping
+      STATE="${STATE,,}"
+
+      # Map Azure DevOps job states to GitHub states
+      # Azure values (lowercased): canceled, failed, succeeded, succeededwithissues, skipped
+      case "$STATE" in
+        succeeded|success)
+          GITHUB_STATE="success"
+          ;;
+        failed|failure)
+          GITHUB_STATE="failure"
+          ;;
+        error)
+          GITHUB_STATE="error"
+          ;;
+        pending|queued|inProgress|in_progress)
+          GITHUB_STATE="pending"
+          ;;
+        *)
+          GITHUB_STATE="failure"
+          ;;
+      esac
+
+      echo "Mapping Azure DevOps state '$STATE' to GitHub state '$GITHUB_STATE'"
+      
+      # Choose target URL
+      if [ -n "${{ parameters.targetUrl }}" ]; then
+        TARGET_URL="${{ parameters.targetUrl }}"
+      else
+        TARGET_URL="${SYSTEM_TEAMFOUNDATIONCOLLECTIONURI}${SYSTEM_TEAMPROJECT}/_build/results?buildId=${BUILD_BUILDID}"
+      fi
+      
+      # Check for GitHub token
+      if [ -z "${GITHUB_TOKEN:-}" ]; then
+        echo "WARNING: GITHUB_TOKEN environment variable is not set"
+        echo "The GetGitHubToken task may not have run successfully, or the extension may not be installed."
+        echo "Skipping GitHub status update."
+        exit 0
+      fi
+      
+      # Build JSON payload
+      PAYLOAD=$(jq -n \
+        --arg state "$GITHUB_STATE" \
+        --arg target_url "$TARGET_URL" \
+        --arg description "$DESCRIPTION" \
+        --arg context "$CONTEXT" \
+        '{
+          state: $state,
+          target_url: $target_url,
+          description: $description,
+          context: $context
+        }')
+      
+      echo "Setting GitHub commit status:"
+      echo "  Repository: $OWNER/$REPO"
+      echo "  Commit SHA: $SHA"
+      echo "  Context: $CONTEXT"
+      echo "  State: $GITHUB_STATE"
+      echo "  Description: $DESCRIPTION"
+      
+      # POST to GitHub API
+      RESPONSE=$(curl -X POST \
+        -H "Accept: application/vnd.github+json" \
+        -H "Authorization: Bearer ${GITHUB_TOKEN}" \
+        -H "X-GitHub-Api-Version: 2022-11-28" \
+        -d "$PAYLOAD" \
+        "https://api.github.com/repos/$OWNER/$REPO/statuses/$SHA" \
+        -w "\n%{http_code}" \
+        -s)
+      
+      HTTP_CODE=$(echo "$RESPONSE" | tail -n 1)
+      BODY=$(echo "$RESPONSE" | sed '$d')
+      
+      if [ "$HTTP_CODE" = "201" ]; then
+        echo "✓ GitHub commit status successfully set"
+      else
+        echo "✗ Failed to set GitHub commit status (HTTP $HTTP_CODE)"
+        echo "$BODY" | jq '.' || echo "$BODY"
+        exit 1
+      fi
+  env:
+    GITHUB_TOKEN: $(GitHubToken)

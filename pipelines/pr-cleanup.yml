@@ -1,22 +1,17 @@
 trigger: none
 
+pr:
+  branches:
+    include:
+      - main
+      - release/*
+
 variables:
   - template: config/var-pool.yml
   - template: config/var-commonvariables.yml
   - template: config/var-commonvariables-release.yml
 
 resources:
-  # https://dev.azure.com/4tecture-demo/_apis/public/distributedtask/webhooks/fastfoodPrUpdated?api-version=6.0-preview
-  webhooks:
-    - webhook: fastfoodPrUpdated                ### Webhook alias
-      connection: FastfoodPREventsConnection    ### Incoming webhook service connection
-      filters:
-      - path: eventType
-        value: git.pullrequest.updated
-      - path: publisherId
-        value: tfs
-      - path: resource.repository.name
-        value: FastFood
   containers:
     - container: worker
       image: $(azureContainerRegistry)/fastfood-buildenv:$(NetCoreSdkVersion)
@@ -25,7 +20,8 @@ resources:
 jobs:
   - job: prCleanup
     displayName: 'PR Cleanup'
-    condition: or(eq('${{ parameters.fastfoodPrUpdated.resource.status }}', 'completed'), eq('${{ parameters.fastfoodPrUpdated.resource.status }}', 'abandoned'))
+    # Only run when PR is closed or abandoned
+    condition: and(succeeded(), in(variables['Build.Reason'], 'PullRequest'), eq(variables['System.PullRequest.Status'], 'closed'))
     pool:
       ${{ if eq(variables['poolMode'], 'HostedAgent') }}:
         vmImage: ${{ variables['poolVmImage'] }}
@@ -40,4 +36,4 @@ jobs:
         connectionType: 'Kubernetes Service Connection'
         kubernetesServiceEndpoint: $(kubernetesDeploymentServiceConnection)
         command: delete
-        arguments: 'namespace pr-${{ parameters.fastfoodPrUpdated.resource.pullRequestId }}'
+        arguments: 'namespace pr-$(System.PullRequest.PullRequestNumber)'

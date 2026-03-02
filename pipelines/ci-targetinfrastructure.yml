@@ -9,6 +9,17 @@ trigger:
     include:
       - src/chart/daprenv/**
 
+pr:
+  branches:
+    include:
+      - main
+      - release/*
+  paths:
+    include:
+      - src/chart/daprenv/**
+      - pipelines/ci-targetinfrastructure.yml
+      - pipelines/cd-targetinfrastructure.yml
+
 variables:
   - template: config/var-pool.yml
   - template: config/var-commonvariables.yml

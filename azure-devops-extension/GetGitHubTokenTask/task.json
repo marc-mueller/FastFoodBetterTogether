@@ -1,0 +1,46 @@
+{
+  "$schema": "https://raw.githubusercontent.com/Microsoft/azure-pipelines-task-lib/master/tasks.schema.json",
+  "id": "732fef70-f8e5-4bcb-895a-2adf741c1f50",
+  "name": "GetGitHubToken",
+  "friendlyName": "Get GitHub Token from Service Connection",
+  "description": "Retrieves a short-lived GitHub token from an Azure DevOps GitHub service connection and stores it as a secret variable",
+  "helpMarkDown": "This task gets a GitHub token from the specified service connection and makes it available as a secret pipeline variable",
+  "category": "Utility",
+  "author": "4tecture",
+  "visibility": [
+    "Build",
+    "Release"
+  ],
+  "version": {
+    "Major": 1,
+    "Minor": 0,
+    "Patch": 6
+  },
+  "demands": [],
+  "instanceNameFormat": "Get GitHub Token",
+  "minimumAgentVersion": "2.0.0",
+  "inputs": [
+    {
+      "name": "gitHubConnection",
+      "type": "connectedService:github:OAuth,PersonalAccessToken,InstallationToken,Token",
+      "label": "GitHub connection (OAuth or PAT)",
+      "defaultValue": "",
+      "required": true,
+      "helpMarkDown": "Select the GitHub service connection to use for authentication"
+    },
+    {
+      "name": "variableName",
+      "type": "string",
+      "label": "Output Variable Name",
+      "defaultValue": "GitHubToken",
+      "required": true,
+      "helpMarkDown": "The name of the pipeline variable to store the token in. The variable will be set as a secret variable."
+    }
+  ],
+  "execution": {
+    "Node20_1": {
+      "target": "main.js",
+      "argumentFormat": ""
+    }
+  }
+}

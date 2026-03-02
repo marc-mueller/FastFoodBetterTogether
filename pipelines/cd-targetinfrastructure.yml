@@ -1,5 +1,6 @@
 name: cd-targetinfrastructure
 trigger: none
+pr: none
 resources:
   pipelines:
   - pipeline: CIBuild
@@ -83,12 +84,14 @@ stages:
 
   - stage: PullRequest
     dependsOn: []
-    condition: and(succeeded(), ne(variables['System.PullRequest.PullRequestId'], ''))
+    condition: and(succeeded(), startsWith(variables['resources.pipeline.ciBuild.sourceBranch'], 'refs/pull/'))
     variables:
       - name: stagename
         value: pr
       - name: namespace
-        value: $(stagename)-$(System.PullRequest.PullRequestId)
+        value: $(stagename)-$(System.PullRequest.PullRequestNumber)
+      - name: redisDB
+        value: $[counter(format('{0:yyyyMM}', pipeline.startTime), 3)]
     jobs:
       - template: deploy/job-deployservicetok8s.yml
         parameters:
