@@ -17,4 +17,7 @@ export default {
     async finishOrderItem(itemId) {
         return apiClient.post(`/kitchenwork/itemfinished/${itemId}`);
     },
+    async startOrderItemPreparation(itemId) {
+        return apiClient.post(`/kitchenwork/iteminpreparation/${itemId}`);
+    },
 };

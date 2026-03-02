@@ -107,11 +107,29 @@ public class KitchenWorkControllerTests
         // Arrange
         var itemId = Guid.NewGuid();
         var orderId = Guid.NewGuid();
-        var item = new KitchenOrderItem { Id = itemId, OrderId = orderId };
+        var item = new KitchenOrderItem { Id = itemId, OrderId = orderId, State = KitchenOrderItemState.Finished };
         _kitchenServiceMock.Setup(s => s.SetItemAsFinished(itemId)).ReturnsAsync(item);
 
         // Act
         var result = await _controller.SetItemAsFinished(itemId);
+
+        // Assert
+        var okResult = Assert.IsType<OkObjectResult>(result.Result);
+        var returnedItem = Assert.IsType<KitchenService.Common.Dtos.KitchenOrderItemDto>(okResult.Value);
+        Assert.Equal(itemId, returnedItem.Id);
+    }
+
+    [Fact]
+    public async Task SetItemAsInPreparation_ValidId_ReturnsItem()
+    {
+        // Arrange
+        var itemId = Guid.NewGuid();
+        var orderId = Guid.NewGuid();
+        var item = new KitchenOrderItem { Id = itemId, OrderId = orderId, State = KitchenOrderItemState.InPreparation, StartedAt = DateTimeOffset.UtcNow };
+        _kitchenServiceMock.Setup(s => s.SetItemAsInPreparation(itemId)).ReturnsAsync(item);
+
+        // Act
+        var result = await _controller.SetItemAsInPreparation(itemId);
 
         // Assert
         var okResult = Assert.IsType<OkObjectResult>(result.Result);

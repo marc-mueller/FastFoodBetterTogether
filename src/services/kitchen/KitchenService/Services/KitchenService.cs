@@ -46,13 +46,13 @@ public class KitchenService : IKitchenService
     public Task<IEnumerable<KitchenOrder>> GetPendingOrders()
     {
         using var activity = _observability.StartActivity(this.GetType(), includeCallerTypeInName: true);
-        return Task.FromResult(_mockStorage.Values.Where(o => o.Items.Any(i => i.State == KitchenOrderItemState.AwaitingPreparation)));
+        return Task.FromResult(_mockStorage.Values.Where(o => o.Items.Any(i => i.State == KitchenOrderItemState.AwaitingPreparation || i.State == KitchenOrderItemState.InPreparation)));
     }
     
     public Task<KitchenOrder?> GetPendingOrder(Guid id)
     {
         using var activity = _observability.StartActivity(this.GetType(), includeCallerTypeInName: true);
-        return Task.FromResult(_mockStorage.Values.Where(o => o.Items.Any(i => i.State == KitchenOrderItemState.AwaitingPreparation)).SingleOrDefault(o => o.Id == id));
+        return Task.FromResult(_mockStorage.Values.Where(o => o.Items.Any(i => i.State == KitchenOrderItemState.AwaitingPreparation || i.State == KitchenOrderItemState.InPreparation)).SingleOrDefault(o => o.Id == id));
     }
     
     public async Task<IEnumerable<KitchenOrderItem>> GetPendingItems()
@@ -60,7 +60,7 @@ public class KitchenService : IKitchenService
         using var activity = _observability.StartActivity(this.GetType(), includeCallerTypeInName: true);
         
         var pendingItems = _mockStorage.Values.SelectMany(o => o.Items)
-            .Where(i => i.State == KitchenOrderItemState.AwaitingPreparation);
+            .Where(i => i.State == KitchenOrderItemState.AwaitingPreparation || i.State == KitchenOrderItemState.InPreparation);
         
         // Check if auto-prioritization feature is enabled
         var autoPrioritizationEnabled = await _featureManager.IsEnabledAsync(FeatureFlags.AutoPrioritization);
@@ -128,15 +128,43 @@ public class KitchenService : IKitchenService
         return 5.0; // Default
     }
 
+    public Task<KitchenOrderItem> SetItemAsInPreparation(Guid id)
+    {
+        using var activity = _observability.StartActivity(this.GetType(), includeCallerTypeInName: true);
+        var item = _mockStorage.Values.SelectMany(o => o.Items).FirstOrDefault(i => i.Id == id);
+        if (item != null)
+        {
+            if (item.State != KitchenOrderItemState.AwaitingPreparation)
+            {
+                activity?.SetStatus(ActivityStatusCode.Error, "Item is not in AwaitingPreparation state");
+                throw new InvalidOperationException("Item is not in AwaitingPreparation state");
+            }
+            item.State = KitchenOrderItemState.InPreparation;
+            item.StartedAt = DateTimeOffset.UtcNow;
+            
+            _daprClient.PublishEventAsync(FastFoodConstants.PubSubName, FastFoodConstants.EventNames.KitchenItemInPreparation, new KitchenItemInPreparationEvent(){ OrderId = item.OrderId, ItemId = item.Id });
+            
+            return Task.FromResult(item);
+        }
+        activity?.SetStatus(ActivityStatusCode.Error, "Item not found");
+        throw new InvalidOperationException("Item not found");
+    }
+
     public Task<KitchenOrderItem> SetItemAsFinished(Guid id)
     {
         using var activity = _observability.StartActivity(this.GetType(), includeCallerTypeInName: true);
         var item = _mockStorage.Values.SelectMany(o => o.Items).FirstOrDefault(i => i.Id == id);
         if (item != null)
         {
+            if (item.State != KitchenOrderItemState.InPreparation)
+            {
+                activity?.SetStatus(ActivityStatusCode.Error, "Item is not in InPreparation state");
+                throw new InvalidOperationException("Item is not in InPreparation state");
+            }
             item.State = KitchenOrderItemState.Finished;
             item.FinishedAt = DateTimeOffset.UtcNow;
-            _observability.OrderItemPreparationDuration.Record((item.FinishedAt - item.CreatedAt).TotalSeconds);
+            var preparationStart = item.StartedAt ?? item.CreatedAt;
+            _observability.OrderItemPreparationDuration.Record((item.FinishedAt - preparationStart).TotalSeconds);
             
             _daprClient.PublishEventAsync(FastFoodConstants.PubSubName, "kitchenitemfinished", new KitchenItemFinishedEvent(){ OrderId = item.OrderId, ItemId = item.Id });
             

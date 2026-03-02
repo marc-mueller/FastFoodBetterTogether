@@ -7,6 +7,7 @@ vi.mock('@/store/apiClient', () => ({
     getPendingOrders: vi.fn(async () => ({ data: [ { id: 'o1', orderReference: '001', items: [{ id: 'i1', productDescription: 'A', state: 'Pending' }] } ] })),
     getPendingOrder: vi.fn(async () => ({ data: { id: 'o1', orderReference: '001', items: [{ id: 'i1', productDescription: 'A', state: 'Finished' }] } })),
     finishOrderItem: vi.fn(async () => ({})),
+    startOrderItemPreparation: vi.fn(async () => ({})),
   }
 }))
 
@@ -36,5 +37,10 @@ describe('kitchenStore', () => {
   it('finishes an order item (no throw)', async () => {
     const store = useKitchenStore()
     await expect(store.finishOrderItem('i1')).resolves.toBeUndefined()
+  })
+
+  it('starts order item preparation (no throw)', async () => {
+    const store = useKitchenStore()
+    await expect(store.startOrderItemPreparation('i1')).resolves.toBeUndefined()
   })
 })

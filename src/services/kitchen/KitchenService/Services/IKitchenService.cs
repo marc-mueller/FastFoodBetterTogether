@@ -8,5 +8,6 @@ public interface IKitchenService
     Task<IEnumerable<KitchenOrder>> GetPendingOrders();
     Task<KitchenOrder?> GetPendingOrder(Guid id);
     Task<IEnumerable<KitchenOrderItem>> GetPendingItems();
+    Task<KitchenOrderItem> SetItemAsInPreparation(Guid id);
     Task<KitchenOrderItem> SetItemAsFinished(Guid id);
 }

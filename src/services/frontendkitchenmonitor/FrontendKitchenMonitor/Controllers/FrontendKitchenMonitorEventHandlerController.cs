@@ -58,4 +58,24 @@ public class FrontendKitchenMonitorEventHandlerController: ControllerBase
             return StatusCode(500);
         }
     }
+
+    [HttpPost("kitcheniteminpreparation")]
+    [Topic(FastFoodConstants.PubSubName, FastFoodConstants.EventNames.KitchenItemInPreparation)]
+    public async Task<ActionResult> KitchenItemInPreparation(KitchenItemInPreparationEvent itemInPreparationEvent)
+    {
+        try
+        {
+            _logger.LogInformation("Kitchen item in preparation event received: {OrderId}", itemInPreparationEvent.OrderId);
+            // Broadcast to all clients subscribed to this orderId
+            await _hubContext.Clients.Group(Constants.HubGroupKitchenMonitors)
+                .SendAsync("kitchenorderupdated", itemInPreparationEvent.OrderId);
+
+            return Ok();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error processing kitchen item in preparation event: {OrderId}/{ItemId}", itemInPreparationEvent.OrderId, itemInPreparationEvent.ItemId);
+            return StatusCode(500);
+        }
+    }
 }
