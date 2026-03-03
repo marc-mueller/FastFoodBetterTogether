@@ -197,7 +197,7 @@ stages:
                     DeploymentManagedidentity: 'financeservice-$(namespace)-dmi'
                     SetupBackup: false
                 - script: |
-                    echo "##vso[task.setvariable variable=connectionString]Server=$(sqlServerName).database.windows.net,1433;Database=FastFoodFinance-pr$(System.PullRequest.PullRequestId);TrustServerCertificate=True;"
+                    echo "##vso[task.setvariable variable=connectionString]Server=$(sqlServerName).database.windows.net,1433;Database=FastFoodFinance-pr$(System.PullRequest.PullRequestNumber);TrustServerCertificate=True;"
                     echo "##vso[task.setvariable variable=serviceWorkloadIdentityClientId]$(AzureIdentity.ClientId)"
                     echo "##vso[task.setvariable variable=serviceWorkloadIdentityName]$(AzureIdentity.Name)"
                     echo "##vso[task.setvariable variable=deployWorkloadIdentityClientId]$(DeploymentAzureIdentity.ClientId)"
