@@ -6,7 +6,7 @@ namespace FastFood.Ui.System.Tests.PageObjects.KitchenMonitor;
 /// Page Object for Kitchen Monitor
 /// 
 /// BEST PRACTICE: This page object hides all UI automation complexity from testers.
-/// Testers use simple methods like WaitForOrder(), FinishItem(), etc.
+/// Testers use simple methods like WaitForOrder(), StartItem(), FinishItem(), etc.
 /// Uses dual lookup strategy for robustness:
 /// - Item IDs (GUIDs) for stable, unique identification
 /// - Display names for test readability and human-friendly assertions
@@ -15,6 +15,8 @@ namespace FastFood.Ui.System.Tests.PageObjects.KitchenMonitor;
 /// - data-testid: Uses item.id (GUID) for unique identification
 /// - data-order-ref: Contains order reference for filtering/debugging
 /// - data-product-name: Contains display name for reference/debugging
+/// 
+/// State flow: AwaitingPreparation → InPreparation → Finished
 /// </summary>
 public class KitchenMonitorPage : BasePage
 {
@@ -81,9 +83,20 @@ public class KitchenMonitorPage : BasePage
             var productName = await itemLocator.GetAttributeAsync("data-product-name") ?? "";
             productName = productName.Trim();
             
-            // Check if item is finished
-            var finishedLabel = itemId != null ? itemLocator.Page.GetByTestId($"item-finished-{itemId}") : null;
-            var isFinished = finishedLabel != null && await finishedLabel.CountAsync() > 0;
+            // Check item state
+            var isFinished = false;
+            var isInPreparation = false;
+            if (itemId != null)
+            {
+                var finishedLabel = itemLocator.Page.GetByTestId($"item-finished-{itemId}");
+                isFinished = await finishedLabel.CountAsync() > 0;
+                
+                if (!isFinished)
+                {
+                    var inPreparationBadge = itemLocator.Page.GetByTestId($"item-in-preparation-{itemId}");
+                    isInPreparation = await inPreparationBadge.CountAsync() > 0;
+                }
+            }
 
             if (!string.IsNullOrEmpty(productName) && itemId != null)
             {
@@ -92,7 +105,8 @@ public class KitchenMonitorPage : BasePage
                     ItemId = itemId,
                     ProductName = productName,
                     Quantity = 1, // Kitchen doesn't display quantity in the current UI
-                    IsFinished = isFinished
+                    IsFinished = isFinished,
+                    IsInPreparation = isInPreparation
                 });
             }
         }
@@ -101,7 +115,37 @@ public class KitchenMonitorPage : BasePage
     }
 
     /// <summary>
+    /// Marks a specific item as started (InPreparation) in the kitchen.
+    /// The item is identified by its product name within the order context.
+    /// </summary>
+    /// <param name="orderNumber">The order number containing the item</param>
+    /// <param name="productName">The product name to start (e.g., "Cheeseburger")</param>
+    public async Task StartItemAsync(string orderNumber, string productName)
+    {
+        var itemLocator = Page.Locator(
+            $"[data-order-ref='{orderNumber.ToLower()}'][data-product-name='{productName}']"
+        );
+        
+        if (await itemLocator.CountAsync() == 0)
+        {
+            throw new InvalidOperationException($"Item '{productName}' not found in order '{orderNumber}'");
+        }
+        
+        var testId = await itemLocator.First.GetAttributeAsync("data-testid");
+        if (testId != null && testId.StartsWith("order-item-"))
+        {
+            var itemId = testId.Substring("order-item-".Length);
+            await StartItemByIdAsync(itemId);
+        }
+        else
+        {
+            throw new InvalidOperationException($"Could not determine item ID for '{productName}'");
+        }
+    }
+
+    /// <summary>
     /// Marks a specific item as finished in the kitchen.
+    /// The item must first be in InPreparation state (use StartItemAsync first if needed).
     /// The item is identified by its product name within the order context.
     /// Testers can use product names they see in the UI.
     /// </summary>
@@ -124,6 +168,14 @@ public class KitchenMonitorPage : BasePage
         if (testId != null && testId.StartsWith("order-item-"))
         {
             var itemId = testId.Substring("order-item-".Length);
+            
+            // Check if item needs to be started first (still AwaitingPreparation)
+            var startButton = Page.GetByTestId($"start-item-btn-{itemId}");
+            if (await startButton.CountAsync() > 0)
+            {
+                await StartItemByIdAsync(itemId);
+            }
+            
             await FinishItemByIdAsync(itemId);
         }
         else
@@ -189,12 +241,28 @@ public class KitchenMonitorPage : BasePage
     #region Internal Helper Methods
 
     /// <summary>
+    /// Start a specific item by item ID (GUID), transitioning it to InPreparation.
+    /// Internal method - testers should use StartItemAsync() with product name.
+    /// </summary>
+    internal async Task StartItemByIdAsync(string itemId)
+    {
+        var startButtonTestId = $"start-item-btn-{itemId}";
+        
+        var startButton = Page.GetByTestId(startButtonTestId);
+        await startButton.ClickAsync();
+        
+        // Wait for the UI to update
+        await Task.Delay(500, Xunit.TestContext.Current.CancellationToken);
+    }
+
+    /// <summary>
     /// Finish a specific item by item ID (GUID).
+    /// Item must be in InPreparation state. Use StartItemByIdAsync first if needed.
     /// Internal method - testers should use FinishItemAsync() with product name.
     /// </summary>
     internal async Task FinishItemByIdAsync(string itemId)
     {
-        var finishButtonTestId = $"finish-button-{itemId}";
+        var finishButtonTestId = $"finish-item-btn-{itemId}";
         
         var finishButton = Page.GetByTestId(finishButtonTestId);
         await finishButton.ClickAsync();
@@ -257,4 +325,5 @@ public class KitchenOrderItem
     public string ProductName { get; set; } = string.Empty;
     public int Quantity { get; set; }
     public bool IsFinished { get; set; }
+    public bool IsInPreparation { get; set; }
 }

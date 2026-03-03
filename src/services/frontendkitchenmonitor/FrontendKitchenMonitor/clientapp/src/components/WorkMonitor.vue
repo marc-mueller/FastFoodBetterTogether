@@ -70,13 +70,13 @@ async function finishOrderItem(itemId) {
                   :data-testid="`item-in-preparation-${item.id}`">In Progress</span>
                 <button 
                   class="px-3 py-1 bg-green-500 hover:bg-green-600 dark:bg-green-600 dark:hover:bg-green-700 text-white rounded" 
-                  :data-testid="`finish-item-btn`"
+                  :data-testid="`finish-item-btn-${item.id}`"
                   @click="finishOrderItem(item.id)">Finish</button>
               </template>
               <button 
                 v-else
                 class="px-3 py-1 bg-blue-500 hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700 text-white rounded" 
-                :data-testid="`start-item-btn`"
+                :data-testid="`start-item-btn-${item.id}`"
                 @click="startOrderItem(item.id)">Start</button>
             </div>
           </li>
