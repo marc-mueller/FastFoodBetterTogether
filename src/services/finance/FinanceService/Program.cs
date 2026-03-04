@@ -15,6 +15,9 @@ AppContext.SetSwitch("Microsoft.AspNetCore.Mvc.ApiExplorer.IsEnhancedModelMetada
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Add encryption services for demo
+builder.Services.AddSingleton<IBadEncryptionService, BadEncryptionService>();
+
 // Feature Management
 builder.Services.AddFeatureManagement();
 
