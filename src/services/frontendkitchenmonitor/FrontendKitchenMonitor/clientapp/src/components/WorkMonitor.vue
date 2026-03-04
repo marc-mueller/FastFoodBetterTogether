@@ -9,15 +9,15 @@ onMounted(async () => {
   await ks.initializeSignalRHub()
 })
 
-// Presentational projection with items sorted: unfinished first, finished at the bottom
+// Presentational projection with items sorted: AwaitingPreparation first, InPreparation second, Finished last
 const pendingOrders = computed(() => ks.pendingOrders.map(x => {
+  const stateOrder = { 'AwaitingPreparation': 0, 'InPreparation': 1, 'Finished': 2 }
   const items = (x.items?.map(y => ({ id: y.id, name: y.productDescription, quantity: y.quantity, state: y.state })) ?? [])
     .slice()
     .sort((a, b) => {
-      const aFinished = a.state === 'Finished'
-      const bFinished = b.state === 'Finished'
-      if (aFinished === bFinished) return 0
-      return aFinished ? 1 : -1 // push finished to the bottom
+      const aOrder = stateOrder[a.state] ?? 99
+      const bOrder = stateOrder[b.state] ?? 99
+      return aOrder - bOrder
     })
   return {
     id: x.id,
@@ -25,6 +25,11 @@ const pendingOrders = computed(() => ks.pendingOrders.map(x => {
     orderItems: items
   }
 }))
+
+async function startOrderItem(itemId) {
+  await ks.startOrderItemPreparation(itemId)
+  await ks.fetchPendingOrders()
+}
 
 async function finishOrderItem(itemId) {
   await ks.finishOrderItem(itemId)
@@ -34,14 +39,14 @@ async function finishOrderItem(itemId) {
 
 <template>
   <div class="container mx-auto p-4" data-testid="kitchen-monitor">
-    <h1 class="text-2xl font-bold mb-4" data-testid="kitchen-title">Kitchen Work Monitor</h1>
+    <h1 class="text-2xl font-bold mb-4 dark:text-white" data-testid="kitchen-title">Kitchen Work Monitor</h1>
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4" data-testid="orders-container">
       <div 
         v-for="order in pendingOrders" 
         :key="order.id" 
-        class="p-4 bg-white rounded shadow"
+        class="p-4 bg-white dark:bg-gray-800 rounded shadow"
         :data-testid="`order-card-${order.name.toLowerCase()}`">
-        <h2 class="text-xl font-semibold mb-2" :data-testid="`order-title-${order.name.toLowerCase()}`">{{ order.name }} ({{ order.id }})</h2>
+        <h2 class="text-xl font-semibold mb-2 dark:text-white" :data-testid="`order-title-${order.name.toLowerCase()}`">{{ order.name }} ({{ order.id }})</h2>
         <ul class="space-y-2" :data-testid="`order-items-${order.name.toLowerCase()}`">
           <li 
             v-for="item in order.orderItems" 
@@ -50,20 +55,29 @@ async function finishOrderItem(itemId) {
             :data-testid="`order-item-${item.id}`"
             :data-order-ref="order.name.toLowerCase()"
             :data-product-name="item.name">
-            <span>
+            <span class="dark:text-gray-200">
               <span :data-testid="`item-quantity-${item.id}`">{{ item.quantity }}</span>× 
               <span :data-testid="`item-name-${item.id}`">{{ item.name }}</span>
             </span>
-            <div class="space-x-2">
+            <div class="space-x-2 flex items-center">
               <span 
                 v-if="item.state === 'Finished'" 
-                class="text-green-600 font-semibold"
+                class="text-green-600 dark:text-green-400 font-semibold"
                 :data-testid="`item-finished-${item.id}`">Finished</span>
+              <template v-else-if="item.state === 'InPreparation'">
+                <span 
+                  class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200 animate-pulse"
+                  :data-testid="`item-in-preparation-${item.id}`">In Progress</span>
+                <button 
+                  class="px-3 py-1 bg-green-500 hover:bg-green-600 dark:bg-green-600 dark:hover:bg-green-700 text-white rounded" 
+                  :data-testid="`finish-item-btn`"
+                  @click="finishOrderItem(item.id)">Finish</button>
+              </template>
               <button 
-                v-else 
-                class="px-3 py-1 bg-blue-500 text-white rounded" 
-                :data-testid="`finish-button-${item.id}`"
-                @click="finishOrderItem(item.id)">Finish</button>
+                v-else
+                class="px-3 py-1 bg-blue-500 hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700 text-white rounded" 
+                :data-testid="`start-item-btn`"
+                @click="startOrderItem(item.id)">Start</button>
             </div>
           </li>
         </ul>

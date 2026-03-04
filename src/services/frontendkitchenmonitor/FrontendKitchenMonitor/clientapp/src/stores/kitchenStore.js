@@ -29,6 +29,9 @@ export const useKitchenStore = defineStore('kitchen', {
     async finishOrderItem(itemId) {
       try { await apiClient.finishOrderItem(itemId) } catch (e) { console.error('Error finishing order item:', e) }
     },
+    async startOrderItemPreparation(itemId) {
+      try { await apiClient.startOrderItemPreparation(itemId) } catch (e) { console.error('Error starting order item preparation:', e) }
+    },
     async initializeSignalRHub() {
       const connection = new signalR.HubConnectionBuilder().withUrl('/kitchenorderupdatehub').build()
       // Refresh full list on updates; avoids 404s when an order is removed server-side

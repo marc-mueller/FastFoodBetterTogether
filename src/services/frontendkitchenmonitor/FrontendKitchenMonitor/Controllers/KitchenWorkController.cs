@@ -76,6 +76,21 @@ public class KitchenWorkController : ControllerBase
         }
     }
 
+    // sets an item as in preparation
+    [HttpPost("iteminpreparation/{id}")]
+    public async Task<ActionResult<KitchenOrderItemDto>> SetItemAsInPreparation(Guid id)
+    {
+        try
+        {
+            var item = await _daprClient.InvokeMethodAsync<KitchenOrderItemDto>(HttpMethod.Post, FastFoodConstants.Services.KitchenService, $"{ApiPrefix}/iteminpreparation/{id}");
+            return Ok(item);
+        }
+        catch
+        {
+            return StatusCode(500, "Failed to set item as in preparation.");
+        }
+    }
+
     // sets an item as finished
     [HttpPost("itemfinished/{id}")]
     public async Task<ActionResult<KitchenOrderItemDto>> SetItemAsFinished(Guid id)
