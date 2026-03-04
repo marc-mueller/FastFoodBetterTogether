@@ -118,4 +118,23 @@ public class KitchenWorkControllerTests
         var returnedItem = Assert.IsType<KitchenService.Common.Dtos.KitchenOrderItemDto>(okResult.Value);
         Assert.Equal(itemId, returnedItem.Id);
     }
+
+    [Fact]
+    public async Task SetItemAsInPreparation_ValidId_ReturnsItem()
+    {
+        // Arrange
+        var itemId = Guid.NewGuid();
+        var orderId = Guid.NewGuid();
+        var item = new KitchenOrderItem { Id = itemId, OrderId = orderId, State = KitchenOrderItemState.InPreparation };
+        _kitchenServiceMock.Setup(s => s.SetItemAsInPreparation(itemId)).ReturnsAsync(item);
+
+        // Act
+        var result = await _controller.SetItemAsInPreparation(itemId);
+
+        // Assert
+        var okResult = Assert.IsType<OkObjectResult>(result.Result);
+        var returnedItem = Assert.IsType<KitchenService.Common.Dtos.KitchenOrderItemDto>(okResult.Value);
+        Assert.Equal(itemId, returnedItem.Id);
+        Assert.Equal(KitchenService.Common.Dtos.KitchenOrderItemDtoState.InPreparation, returnedItem.State);
+    }
 }

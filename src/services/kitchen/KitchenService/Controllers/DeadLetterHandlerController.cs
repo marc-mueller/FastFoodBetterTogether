@@ -43,4 +43,13 @@ public class DeadLetterHandlerController : ControllerBase
         // Additional error handling logic can be added here.
         return Ok();
     }
+
+    [HttpPost("deadletter-kitcheniteminpreparation")]
+    [Topic(FastFoodConstants.PubSubName, FastFoodConstants.EventNames.DeadLetterKitchenItemInPreparation)]
+    public ActionResult HandleKitchenItemInPreparationDeadLetter(KitchenItemInPreparationEvent itemEvent)
+    {
+        _logger.LogError("Dead letter received for kitchen item in preparation event: {OrderId}, {ItemId}", itemEvent.OrderId, itemEvent.ItemId);
+        // Additional error handling logic can be added here.
+        return Ok();
+    }
 }

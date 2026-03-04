@@ -192,6 +192,7 @@ public class KitchenServiceTests
             .Returns(Task.CompletedTask);
 
         await _service.AddOrder(orderId, "O4", items);
+        await _service.SetItemAsInPreparation(itemId);
 
         // Act
         var result = await _service.SetItemAsFinished(itemId);
@@ -204,7 +205,7 @@ public class KitchenServiceTests
         
         _daprClientMock.Verify(m => m.PublishEventAsync(
             FastFoodConstants.PubSubName,
-            "kitchenitemfinished",
+            FastFoodConstants.EventNames.KitchenItemFinished,
             It.Is<KitchenItemFinishedEvent>(e => e.ItemId == itemId && e.OrderId == orderId),
             It.IsAny<CancellationToken>()), Times.Once);
     }
@@ -228,6 +229,7 @@ public class KitchenServiceTests
             .Returns(Task.CompletedTask);
 
         await _service.AddOrder(orderId, "O5", items);
+        await _service.SetItemAsInPreparation(itemId);
 
         // Act
         await _service.SetItemAsFinished(itemId);
@@ -258,6 +260,7 @@ public class KitchenServiceTests
             .Returns(Task.CompletedTask);
 
         await _service.AddOrder(orderId, "O6", items);
+        await _service.SetItemAsInPreparation(itemId1);
 
         // Act
         await _service.SetItemAsFinished(itemId1);
@@ -276,5 +279,156 @@ public class KitchenServiceTests
 
         // Act & Assert
         await Assert.ThrowsAsync<InvalidOperationException>(() => _service.SetItemAsFinished(nonExistingItemId));
+    }
+
+    [Fact]
+    public async Task SetItemAsFinished_ItemInAwaitingPreparationState_ThrowsInvalidOperationException()
+    {
+        // Arrange
+        var orderId = Guid.NewGuid();
+        var itemId = Guid.NewGuid();
+        var items = new List<Tuple<Guid, Guid, string, int, string?>>
+        {
+            new Tuple<Guid, Guid, string, int, string?>(itemId, Guid.NewGuid(), "Burger", 1, null)
+        };
+
+        _daprClientMock.Setup(m => m.PublishEventAsync(
+            It.IsAny<string>(),
+            It.IsAny<string>(),
+            It.IsAny<object>(),
+            It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+
+        await _service.AddOrder(orderId, "O-FinishFromAwaiting", items);
+
+        // Act & Assert - item is in AwaitingPreparation, not InPreparation
+        await Assert.ThrowsAsync<InvalidOperationException>(() => _service.SetItemAsFinished(itemId));
+    }
+
+    [Fact]
+    public async Task SetItemAsInPreparation_ValidItem_SetsStateAndPublishesEvent()
+    {
+        // Arrange
+        var orderId = Guid.NewGuid();
+        var itemId = Guid.NewGuid();
+        var items = new List<Tuple<Guid, Guid, string, int, string?>>
+        {
+            new Tuple<Guid, Guid, string, int, string?>(itemId, Guid.NewGuid(), "Burger", 1, null)
+        };
+
+        _daprClientMock.Setup(m => m.PublishEventAsync(
+            It.IsAny<string>(),
+            It.IsAny<string>(),
+            It.IsAny<object>(),
+            It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+
+        await _service.AddOrder(orderId, "O-InPrep1", items);
+
+        // Act
+        var result = await _service.SetItemAsInPreparation(itemId);
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.Equal(itemId, result.Id);
+        Assert.Equal(KitchenOrderItemState.InPreparation, result.State);
+        Assert.NotNull(result.StartedAt);
+
+        _daprClientMock.Verify(m => m.PublishEventAsync(
+            FastFoodConstants.PubSubName,
+            FastFoodConstants.EventNames.KitchenItemInPreparation,
+            It.Is<KitchenItemInPreparationEvent>(e => e.ItemId == itemId && e.OrderId == orderId),
+            It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task SetItemAsInPreparation_ItemAlreadyInPreparation_ThrowsInvalidOperationException()
+    {
+        // Arrange
+        var orderId = Guid.NewGuid();
+        var itemId = Guid.NewGuid();
+        var items = new List<Tuple<Guid, Guid, string, int, string?>>
+        {
+            new Tuple<Guid, Guid, string, int, string?>(itemId, Guid.NewGuid(), "Burger", 1, null)
+        };
+
+        _daprClientMock.Setup(m => m.PublishEventAsync(
+            It.IsAny<string>(),
+            It.IsAny<string>(),
+            It.IsAny<object>(),
+            It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+
+        await _service.AddOrder(orderId, "O-InPrep2", items);
+        await _service.SetItemAsInPreparation(itemId);
+
+        // Act & Assert - already InPreparation
+        await Assert.ThrowsAsync<InvalidOperationException>(() => _service.SetItemAsInPreparation(itemId));
+    }
+
+    [Fact]
+    public async Task SetItemAsInPreparation_ItemAlreadyFinished_ThrowsInvalidOperationException()
+    {
+        // Arrange
+        var orderId = Guid.NewGuid();
+        var itemId = Guid.NewGuid();
+        var items = new List<Tuple<Guid, Guid, string, int, string?>>
+        {
+            new Tuple<Guid, Guid, string, int, string?>(itemId, Guid.NewGuid(), "Burger", 1, null)
+        };
+
+        _daprClientMock.Setup(m => m.PublishEventAsync(
+            It.IsAny<string>(),
+            It.IsAny<string>(),
+            It.IsAny<object>(),
+            It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+
+        await _service.AddOrder(orderId, "O-InPrep3", items);
+        await _service.SetItemAsInPreparation(itemId);
+        await _service.SetItemAsFinished(itemId);
+
+        // Act & Assert - already Finished (order was removed, so item not found)
+        await Assert.ThrowsAsync<InvalidOperationException>(() => _service.SetItemAsInPreparation(itemId));
+    }
+
+    [Fact]
+    public async Task SetItemAsInPreparation_NonExistingItem_ThrowsInvalidOperationException()
+    {
+        // Arrange
+        var nonExistingItemId = Guid.NewGuid();
+
+        // Act & Assert
+        await Assert.ThrowsAsync<InvalidOperationException>(() => _service.SetItemAsInPreparation(nonExistingItemId));
+    }
+
+    [Fact]
+    public async Task GetPendingItems_InPreparationItemsIncluded()
+    {
+        // Arrange
+        var orderId = Guid.NewGuid();
+        var itemId = Guid.NewGuid();
+        var items = new List<Tuple<Guid, Guid, string, int, string?>>
+        {
+            new Tuple<Guid, Guid, string, int, string?>(itemId, Guid.NewGuid(), "Burger", 1, null)
+        };
+
+        _daprClientMock.Setup(m => m.PublishEventAsync(
+            It.IsAny<string>(),
+            It.IsAny<string>(),
+            It.IsAny<object>(),
+            It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+
+        await _service.AddOrder(orderId, "O-Pending", items);
+        await _service.SetItemAsInPreparation(itemId);
+
+        // Act
+        var result = await _service.GetPendingItems();
+
+        // Assert
+        var pendingItems = result.ToList();
+        Assert.Single(pendingItems);
+        Assert.Equal(KitchenOrderItemState.InPreparation, pendingItems[0].State);
     }
 }
