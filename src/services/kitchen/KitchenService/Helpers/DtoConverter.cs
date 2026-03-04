@@ -13,7 +13,7 @@ public static class DtoConverter
 
     public static KitchenOrderItemDto ToDto(this KitchenOrderItem item)
     {
-        return new KitchenOrderItemDto(){ Id = item.Id, ProductId = item.ProductId, Quantity = item.Quantity, CustomerComments = item.CustomerComments, OrderId = item.OrderId, State = (KitchenOrderItemDtoState)item.State , ProductDescription = item.ProductDescription};
+        return new KitchenOrderItemDto(){ Id = item.Id, ProductId = item.ProductId, Quantity = item.Quantity, CustomerComments = item.CustomerComments, OrderId = item.OrderId, State = (KitchenOrderItemDtoState)item.State , ProductDescription = item.ProductDescription, StartedAt = item.StartedAt};
     }
     
     public static KitchenOrder ToEntity(this KitchenOrderDto order)
