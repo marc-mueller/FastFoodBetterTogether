@@ -14,10 +14,10 @@
     </ItemGroup>
 
     <ItemGroup>
-        <PackageReference Include="Dapr.AspNetCore" Version="1.16.1" />
-        <PackageReference Include="Dapr.Actors" Version="1.16.1" />
-        <PackageReference Include="Dapr.Actors.AspNetCore" Version="1.16.1" />
-        <PackageReference Include="Dapr.Workflow" Version="1.16.1" />
+        <PackageReference Include="Dapr.AspNetCore" Version="1.17.7" />
+        <PackageReference Include="Dapr.Actors" Version="1.17.7" />
+        <PackageReference Include="Dapr.Actors.AspNetCore" Version="1.17.7" />
+        <PackageReference Include="Dapr.Workflow" Version="1.17.7" />
         <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.0" />
         <PackageReference Include="Microsoft.Azure.AppConfiguration.AspNetCore" Version="8.4.0" />
         <PackageReference Include="Swashbuckle.AspNetCore" Version="10.0.1" />
