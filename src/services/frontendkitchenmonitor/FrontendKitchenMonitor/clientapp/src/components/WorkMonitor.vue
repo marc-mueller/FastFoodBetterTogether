@@ -9,15 +9,13 @@ onMounted(async () => {
   await ks.initializeSignalRHub()
 })
 
-// Presentational projection with items sorted: unfinished first, finished at the bottom
+// Presentational projection with items sorted by preparation state
 const pendingOrders = computed(() => ks.pendingOrders.map(x => {
   const items = (x.items?.map(y => ({ id: y.id, name: y.productDescription, quantity: y.quantity, state: y.state })) ?? [])
     .slice()
     .sort((a, b) => {
-      const aFinished = a.state === 'Finished'
-      const bFinished = b.state === 'Finished'
-      if (aFinished === bFinished) return 0
-      return aFinished ? 1 : -1 // push finished to the bottom
+      const stateOrder = { AwaitingPreparation: 0, InPreparation: 1, Finished: 2 }
+      return (stateOrder[a.state] ?? 0) - (stateOrder[b.state] ?? 0)
     })
   return {
     id: x.id,
@@ -29,6 +27,10 @@ const pendingOrders = computed(() => ks.pendingOrders.map(x => {
 async function finishOrderItem(itemId) {
   await ks.finishOrderItem(itemId)
   await ks.fetchPendingOrders()
+}
+
+async function startOrderItemPreparation(itemId) {
+  await ks.startOrderItemPreparation(itemId)
 }
 </script>
 
@@ -55,15 +57,19 @@ async function finishOrderItem(itemId) {
               <span :data-testid="`item-name-${item.id}`">{{ item.name }}</span>
             </span>
             <div class="space-x-2">
-              <span 
-                v-if="item.state === 'Finished'" 
-                class="text-green-600 font-semibold"
+              <span v-if="item.state === 'Finished'"
+                class="text-green-600 dark:text-green-400 font-semibold"
                 :data-testid="`item-finished-${item.id}`">Finished</span>
-              <button 
-                v-else 
-                class="px-3 py-1 bg-blue-500 text-white rounded" 
-                :data-testid="`finish-button-${item.id}`"
-                @click="finishOrderItem(item.id)">Finish</button>
+              <template v-else-if="item.state === 'InPreparation'">
+                <span class="text-amber-600 dark:text-amber-400 font-semibold animate-pulse">In Progress</span>
+                <button class="px-3 py-1 bg-blue-500 dark:bg-blue-600 text-white rounded"
+                 data-testid="finish-item-btn"
+                 @click="finishOrderItem(item.id)">Finish</button>
+              </template>
+              <button v-else
+                class="px-3 py-1 bg-amber-500 dark:bg-amber-600 text-white rounded"
+                data-testid="start-item-btn"
+                @click="startOrderItemPreparation(item.id)">Start</button>
             </div>
           </li>
         </ul>
