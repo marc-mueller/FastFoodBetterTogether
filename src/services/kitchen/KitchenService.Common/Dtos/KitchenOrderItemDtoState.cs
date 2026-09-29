@@ -2,6 +2,7 @@
 
 public enum KitchenOrderItemDtoState
 {
-    AwaitingPreparation,
-    Finished
+    AwaitingPreparation = 0,
+    InPreparation = 1,
+    Finished = 2
 }

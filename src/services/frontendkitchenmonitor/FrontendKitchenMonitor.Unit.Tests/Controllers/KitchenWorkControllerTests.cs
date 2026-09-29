@@ -240,4 +240,21 @@ public class KitchenWorkControllerTests
         var statusResult = Assert.IsType<ObjectResult>(result.Result);
         Assert.Equal(500, statusResult.StatusCode);
     }
+
+    [Fact]
+    public async Task SetItemAsInPreparation_ValidId_ReturnsItem()
+    {
+        var itemId = Guid.NewGuid();
+        var expectedItem = new KitchenOrderItemDto { Id = itemId };
+        var request = new HttpRequestMessage();
+        _daprClientMock.Setup(m => m.CreateInvokeMethodRequest(HttpMethod.Post, FastFoodConstants.Services.KitchenService, $"api/kitchenwork/iteminpreparation/{itemId}"))
+            .Returns(request);
+        _daprClientMock.Setup(m => m.InvokeMethodAsync<KitchenOrderItemDto>(request, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(expectedItem);
+
+        var result = await _controller.SetItemAsInPreparation(itemId);
+
+        var okResult = Assert.IsType<OkObjectResult>(result.Result);
+        Assert.Equal(itemId, Assert.IsType<KitchenOrderItemDto>(okResult.Value).Id);
+    }
 }

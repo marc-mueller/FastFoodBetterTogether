@@ -57,7 +57,15 @@ public class KitchenWorkController : ControllerBase
         return Ok(items.Select(i => i.ToDto()));
     }
 
-    // sets an item as finished
+    [HttpPost("iteminpreparation/{id}")]
+    public async Task<ActionResult<KitchenOrderItemDto>> SetItemAsInPreparation(Guid id)
+    {
+        using var activity = _observability.StartActivity(this.GetType(), includeCallerTypeInName: true);
+        var item = await _kitchenServie.SetItemAsInPreparation(id);
+        _logger.LogInformation("SetItemAsInPreparation requested for {ItemId} of order {ItemOrderId}", item.Id, item.OrderId);
+        return Ok(item.ToDto());
+    }
+
     [HttpPost("itemfinished/{id}")]
     public async Task<ActionResult<KitchenOrderItemDto>> SetItemAsFinished(Guid id)
     {

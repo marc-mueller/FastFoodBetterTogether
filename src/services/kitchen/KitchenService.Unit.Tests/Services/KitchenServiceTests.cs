@@ -192,6 +192,7 @@ public class KitchenServiceTests
             .Returns(Task.CompletedTask);
 
         await _service.AddOrder(orderId, "O4", items);
+        await _service.SetItemAsInPreparation(itemId);
 
         // Act
         var result = await _service.SetItemAsFinished(itemId);
@@ -228,6 +229,7 @@ public class KitchenServiceTests
             .Returns(Task.CompletedTask);
 
         await _service.AddOrder(orderId, "O5", items);
+        await _service.SetItemAsInPreparation(itemId);
 
         // Act
         await _service.SetItemAsFinished(itemId);
@@ -258,6 +260,7 @@ public class KitchenServiceTests
             .Returns(Task.CompletedTask);
 
         await _service.AddOrder(orderId, "O6", items);
+        await _service.SetItemAsInPreparation(itemId1);
 
         // Act
         await _service.SetItemAsFinished(itemId1);
@@ -276,5 +279,44 @@ public class KitchenServiceTests
 
         // Act & Assert
         await Assert.ThrowsAsync<InvalidOperationException>(() => _service.SetItemAsFinished(nonExistingItemId));
+    }
+
+    [Fact]
+    public async Task SetItemAsInPreparation_ValidItem_MarksItemAsInPreparation()
+    {
+        var orderId = Guid.NewGuid();
+        var itemId = Guid.NewGuid();
+        await _service.AddOrder(orderId, "O7", new[] { Tuple.Create(itemId, Guid.NewGuid(), "Burger", 1, (string?)null) });
+
+        var result = await _service.SetItemAsInPreparation(itemId);
+
+        Assert.Equal(KitchenOrderItemState.InPreparation, result.State);
+        Assert.NotNull(result.StartedAt);
+        _daprClientMock.Verify(m => m.PublishEventAsync(
+            FastFoodConstants.PubSubName,
+            FastFoodConstants.EventNames.KitchenItemInPreparation,
+            It.Is<KitchenItemInPreparationEvent>(e => e.ItemId == itemId && e.OrderId == orderId),
+            It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task SetItemAsInPreparation_InvalidState_ThrowsInvalidOperationException()
+    {
+        var orderId = Guid.NewGuid();
+        var itemId = Guid.NewGuid();
+        await _service.AddOrder(orderId, "O8", new[] { Tuple.Create(itemId, Guid.NewGuid(), "Burger", 1, (string?)null) });
+        await _service.SetItemAsInPreparation(itemId);
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() => _service.SetItemAsInPreparation(itemId));
+    }
+
+    [Fact]
+    public async Task SetItemAsFinished_AwaitingItem_ThrowsInvalidOperationException()
+    {
+        var orderId = Guid.NewGuid();
+        var itemId = Guid.NewGuid();
+        await _service.AddOrder(orderId, "O9", new[] { Tuple.Create(itemId, Guid.NewGuid(), "Burger", 1, (string?)null) });
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() => _service.SetItemAsFinished(itemId));
     }
 }
