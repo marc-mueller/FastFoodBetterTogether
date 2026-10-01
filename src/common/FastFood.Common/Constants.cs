@@ -13,6 +13,7 @@ public static class FastFoodConstants
         public const string OrderProcessingUpdated = "orderprocessingupdated";
         public const string OrderConfirmed = "orderconfirmed";
         public const string OrderPaid = "orderpaid";
+        public const string KitchenItemInPreparation = "kitcheniteminpreparation";
         public const string KitchenItemFinished = "kitchenitemfinished";
         public const string KitchenOrderStartProcessing = "kitchenorderstartprocessing";
         public const string OrderPrepared = "orderprepared";
@@ -20,6 +21,7 @@ public static class FastFoodConstants
         public const string DeadLetterOrderPaid = "deadletter_orderpaid";
         public const string DeadLetterKitchenOrderStartProcessing = "deadletter_kitchenorderstartprocessing";
         public const string DeadLetterKitchenItemFinished = "deadletter_kitchenitemfinished";
+        public const string DeadLetterKitchenItemInPreparation = "deadletter_kitcheniteminpreparation";
     }
 
     public static class Services

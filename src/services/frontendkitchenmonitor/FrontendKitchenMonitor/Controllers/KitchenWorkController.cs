@@ -90,4 +90,18 @@ public class KitchenWorkController : ControllerBase
             return StatusCode(500, "Failed to retrieve order.");
         }
     }
+
+    [HttpPost("iteminpreparation/{id}")]
+    public async Task<ActionResult<KitchenOrderItemDto>> SetItemAsInPreparation(Guid id)
+    {
+        try
+        {
+            var item = await _daprClient.InvokeMethodAsync<KitchenOrderItemDto>(HttpMethod.Post, FastFoodConstants.Services.KitchenService, $"{ApiPrefix}/iteminpreparation/{id}");
+            return Ok(item);
+        }
+        catch
+        {
+            return StatusCode(500, "Failed to retrieve order.");
+        }
+    }
 }
