@@ -9,4 +9,5 @@ public class KitchenOrderItemDto
     public string? CustomerComments { get; set; }
     public KitchenOrderItemDtoState State { get; set; }
     public Guid OrderId { get; set; }
+    public DateTimeOffset? StartedAt { get; set; }
 }

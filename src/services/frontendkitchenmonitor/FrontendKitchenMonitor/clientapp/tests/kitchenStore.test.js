@@ -1,12 +1,14 @@
 import { setActivePinia, createPinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useKitchenStore } from '@/stores/kitchenStore'
+import apiClient from '@/store/apiClient'
 
 vi.mock('@/store/apiClient', () => ({
   default: {
     getPendingOrders: vi.fn(async () => ({ data: [ { id: 'o1', orderReference: '001', items: [{ id: 'i1', productDescription: 'A', state: 'Pending' }] } ] })),
     getPendingOrder: vi.fn(async () => ({ data: { id: 'o1', orderReference: '001', items: [{ id: 'i1', productDescription: 'A', state: 'Finished' }] } })),
     finishOrderItem: vi.fn(async () => ({})),
+    startOrderItemPreparation: vi.fn(async () => ({})),
   }
 }))
 
@@ -24,6 +26,7 @@ vi.mock('@microsoft/signalr', () => ({
 describe('kitchenStore', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
+    vi.clearAllMocks()
   })
 
   it('loads pending orders', async () => {
@@ -36,5 +39,14 @@ describe('kitchenStore', () => {
   it('finishes an order item (no throw)', async () => {
     const store = useKitchenStore()
     await expect(store.finishOrderItem('i1')).resolves.toBeUndefined()
+  })
+
+  it('starts preparation and refreshes pending orders', async () => {
+    const store = useKitchenStore()
+    await store.startOrderItemPreparation('i1')
+    expect(apiClient.startOrderItemPreparation).toHaveBeenCalledWith('i1')
+    expect(apiClient.getPendingOrders).toHaveBeenCalledOnce()
+    expect(store.pendingOrders.length).toBe(1)
+    expect(store.pendingOrders[0].orderReference).toBe('001')
   })
 })

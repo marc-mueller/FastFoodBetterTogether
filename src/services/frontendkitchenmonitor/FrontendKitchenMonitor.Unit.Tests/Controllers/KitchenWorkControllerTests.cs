@@ -240,4 +240,39 @@ public class KitchenWorkControllerTests
         var statusResult = Assert.IsType<ObjectResult>(result.Result);
         Assert.Equal(500, statusResult.StatusCode);
     }
+
+    [Fact]
+    public async Task SetItemAsInPreparation_ValidId_ReturnsItem()
+    {
+        var itemId = Guid.NewGuid();
+        var expectedItem = new KitchenOrderItemDto { Id = itemId, State = KitchenOrderItemDtoState.InPreparation };
+        var request = new HttpRequestMessage();
+        _daprClientMock.Setup(m => m.CreateInvokeMethodRequest(HttpMethod.Post, FastFoodConstants.Services.KitchenService, $"api/kitchenwork/iteminpreparation/{itemId}"))
+            .Returns(request);
+        _daprClientMock.Setup(m => m.InvokeMethodAsync<KitchenOrderItemDto>(request, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(expectedItem);
+
+        var result = await _controller.SetItemAsInPreparation(itemId);
+
+        var okResult = Assert.IsType<OkObjectResult>(result.Result);
+        var item = Assert.IsType<KitchenOrderItemDto>(okResult.Value);
+        Assert.Equal(itemId, item.Id);
+        Assert.Equal(KitchenOrderItemDtoState.InPreparation, item.State);
+    }
+
+    [Fact]
+    public async Task SetItemAsInPreparation_DaprClientThrowsException_ReturnsInternalServerError()
+    {
+        var itemId = Guid.NewGuid();
+        var request = new HttpRequestMessage();
+        _daprClientMock.Setup(m => m.CreateInvokeMethodRequest(HttpMethod.Post, FastFoodConstants.Services.KitchenService, $"api/kitchenwork/iteminpreparation/{itemId}"))
+            .Returns(request);
+        _daprClientMock.Setup(m => m.InvokeMethodAsync<KitchenOrderItemDto>(request, It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new Exception("Test exception"));
+
+        var result = await _controller.SetItemAsInPreparation(itemId);
+
+        var statusResult = Assert.IsType<ObjectResult>(result.Result);
+        Assert.Equal(500, statusResult.StatusCode);
+    }
 }
